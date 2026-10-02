@@ -58,7 +58,7 @@ AI 自动拆成头发/脸/眼睛等图层 → 自动绑定骨架与动作 → �
 
 ### 方式一：下载即用（推荐）
 
-到 [Releases](../../releases) 下载 `超级AI工作台 v1.3（解压双击启动vbs）.zip`：
+到 [Releases](../../releases) 下载 **`SuperAI-Workstation-v1.3-portable.zip`**：
 
 1. **整个解压**到任意文件夹（别只解一部分）
 2. 双击 **`启动.vbs`**（首次会顺手在桌面建快捷方式）
