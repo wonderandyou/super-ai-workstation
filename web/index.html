@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>超级AI工作台 v1.3 · Made by 杨家乐（内江师范学院-智建学院）</title>
+  <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+
+<!-- ===================== 顶部 Hero ===================== -->
+<header class="hero">
+  <div class="hero-art" aria-hidden="true"><img src="/static/assets/hero.webp" alt=""></div>
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <div class="hero-text">
+      <h1 id="siteTitle">超级AI工作台<span class="sub">AI Workstation</span></h1>
+      <p class="version" id="appVersion" style="margin:8px 0 11px;font-size:13px;font-weight:700;letter-spacing:.6px;color:#7fd4ff;text-shadow:0 0 12px rgba(90,190,255,.45)">v1.3</p>
+      <p class="slogan" id="siteSlogan">一切奇迹的起点</p>
+      <p class="slogan slogan2" id="siteSlogan2">与你相遇，便是奇迹</p>
+      <p class="byline" id="siteAuthor">Made by 杨家乐（内江师范学院-智建学院）</p>
+      <p class="contact" id="siteContact">有问题加Q:3153180025</p>
+    </div>
+    <div class="heroRight">
+      <div class="hero-status">
+        <span class="dot" id="svcDot"></span>
+        <span id="svcText">连接中…</span>
+      </div>
+      <button class="killAll" id="killAllBackends"
+        title="停掉 ComfyUI / AI 音乐工坊 / 小鲸鱼生图 / PSD2Live，把内存和显存让出来（工作站自己和 DSH 不受影响）">
+        ⏻ 关掉所有后端
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== 标签页导航 ===================== -->
+<nav class="tabs" id="tabs">
+  <div class="tabRow">
+    <button class="tab active" data-tab="dsh"><i>⚡</i><span>高速工作流</span></button>
+    <button class="tab" data-tab="search"><i>🔍</i><span>AI 搜索引擎</span></button>
+    <button class="tab" data-tab="doubao"><i>🎨</i><span>豆包 Seedream 生图</span></button>
+    <button class="tab" data-tab="qwen"><i>🐋</i><span>本地千问生图</span></button>
+    <button class="tab" data-tab="vgen"><i>🎬</i><span>AI 生视频</span></button>
+    <button class="tab" data-tab="live2d"><i>🎭</i><span>Live2D 制作</span></button>
+    <button class="tab" data-tab="matting"><i>✂️</i><span>AI 抠图</span></button>
+    <button class="tab" data-tab="blend"><i>🎨</i><span>AI 溶图</span></button>
+  </div>
+  <div class="tabRow">
+    <button class="tab" data-tab="music"><i>🎵</i><span>AI 音乐工坊</span></button>
+    <button class="tab" data-tab="stem"><i>🎚️</i><span>AI 人声分离</span></button>
+    <button class="tab" data-tab="cover"><i>🎤</i><span>AI 翻唱</span></button>
+    <button class="tab" data-tab="tts"><i>📖</i><span>声音包朗读</span></button>
+    <button class="tab" data-tab="toolbox"><i>🧰</i><span>电脑工具百宝箱</span></button>
+    <button class="tab" data-tab="gallery"><i>🖼️</i><span>作品库</span></button>
+    <button class="tab" data-tab="settings"><i>⚙️</i><span>设置</span></button>
+  </div>
+  <span class="tab-ink" id="tabInk"></span>
+</nav>
+
+<main id="panes">
+
+  <!-- ============ 标签：AI 搜索引擎 ============ -->
+  <section class="pane" data-pane="search">
+    <div class="grid">
+
+      <div class="col-main">
+        <div class="card">
+          <h2>🔍 AI 搜索引擎 <span class="hint">联网搜索 · 分点论述 · 给来源</span>
+            <span class="pill" id="srPill" style="margin-left:auto">检测中…</span>
+          </h2>
+          <p class="muted">
+            把问题写进去，它<b>联网搜一遍</b>，给你<b>分点论述的答案</b>、<b>来源</b>，最后列出<b>参考网址</b>。
+            搜索走 DeepSeek 官方 <b>Anthropic 兼容接口</b>的原生联网搜索 —— 和 DSH 自己联网是同一条通道。
+          </p>
+          <textarea id="srInput" class="srInput"
+            placeholder="想问什么？&#10;例：2026 年国内几家的图像生成 API 价格各是多少，谁最便宜&#10;（Ctrl + Enter 直接搜）"></textarea>
+          <div class="row" style="margin-top:10px;flex-wrap:wrap">
+            <button class="primary" id="srGo">🔍 搜一下</button>
+            <button class="mini" id="srClear">清空</button>
+            <button class="mini" id="srGoSetting">⚙️ 去填 Key</button>
+            <span class="hint" style="align-self:center">一次大约 20~60 秒（搜索要跑一个完整模型轮次）</span>
+          </div>
+          <div class="prog" id="srProg" style="display:none">
+            <div class="bar"><span id="srBar"></span></div>
+            <div class="progText" id="srProgText">准备中…</div>
+          </div>
+          <div class="status" id="srStatus"></div>
+          <pre class="log" id="srLog">（还没开始）</pre>
+        </div>
+
+        <div class="card" id="srResultCard" style="display:none">
+          <h2>答案 <span class="hint" id="srQ"></span></h2>
+          <p class="muted" id="srMeta" style="font-size:12.5px"></p>
+          <div id="srPoints" style="margin-top:6px"></div>
+
+          <div id="srSrcBox" style="display:none;margin-top:16px">
+            <h2 style="font-size:15px;border-top:1px solid var(--line);padding-top:14px">来源</h2>
+            <div id="srSources"></div>
+          </div>
+
+          <div id="srRefBox" style="display:none;margin-top:16px">
+            <h2 style="font-size:15px;border-top:1px solid var(--line);padding-top:14px">参考网址</h2>
+            <ol class="srRefs" id="srRefs"></ol>
+            <p class="muted" style="font-size:12.5px">
+              这些都是这次搜索真实返回的来源（DeepSeek 官方联网搜索的结构化结果，不是从答案文字里抠出来的）。
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="col-side">
+        <div class="card">
+          <h2>它怎么搜的</h2>
+          <div class="kv"><span>通道</span><b>DeepSeek Anthropic 兼容接口</b></div>
+          <div class="kv"><span>端点</span><b>/anthropic/v1/messages</b></div>
+          <div class="kv"><span>工具</span><b>web_search（服务端原生）</b></div>
+          <div class="kv"><span>来源</span><b>结构化搜索结果块</b></div>
+          <p class="muted" style="margin-top:12px">
+            和 DSH 自己联网用的是<b>同一条通道</b>：DeepSeek 的 Chat Completions / Responses 接口
+            都不支持联网（<code>web_search</code> 会被直接忽略），只有 Anthropic 兼容的 Messages
+            通道带服务端原生搜索。
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>正规来源优先</h2>
+          <p class="muted">
+            提示词里已经要求它<b>优先采信官方文档、政府与高校网站、权威媒体、厂商官网</b>，
+            不采用来路不明的聚合站与内容农场；也要求它<b>只依据搜到的资料</b>回答，
+            资料不足就直说"资料不足"，不许硬编。
+          </p>
+          <p class="muted" style="margin-top:10px">
+            来源列表<b>按权威度排过序</b>：官方 / 政府 / 高校 / 百科 / 大厂官网打
+            <span class="srTier t0">权威</span> 标签排最前，问答与技术社区打
+            <span class="srTier t1">社区</span> 标签排中间，其余排最后。同一个站最多留 2 条。
+          </p>
+          <p class="muted" style="margin-top:10px">
+            答案里的 <code>[1] [2]</code> 就是来源编号，和下面「参考网址」的编号一一对应，可以点开逐条核对。
+          </p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 标签 1：豆包 Seedream 生图 ============ -->
+  <section class="pane" data-pane="doubao">
+
+    <!-- 🎨 参考图风格提取（豆包 Seedream 生图）-->
+    <div class="card" id="dbStyleCard">
+      <h2>🎨 参考图风格提取 <span class="hint">上传图 → AI 认出风格 → 关键词存本地</span></h2>
+      <p class="muted" style="margin-top:0">
+        挑一张喜欢的图，自动按 <b>画风 / 主体 / 配色 / 光影 / 构图 / 氛围 / 质感 / 细节</b>
+        八个模块提取关键词 ✓ 可以随手改词，再一键填进上面的提示词框，
+        或者存进本地关键词库以后反复用 ✓
+        <br>（走 DeepSeek 的视觉能力，图只发给你自己的 API ✓）
+      </p>
+      <div class="row">
+        <button class="mini primary" id="dbStylePick" onclick="document.getElementById('dbStyleFile').click()">📷 选图片</button>
+        <input type="file" id="dbStyleFile" accept="image/*" multiple style="display:none">
+        <button class="mini" id="dbStyleRun" disabled>🔍 开始识别</button>
+        <button class="mini" id="dbStyleFill" disabled>⬆ 填入提示词</button>
+        <button class="mini" id="dbStyleSave" disabled>💾 存入关键词库</button>
+        <span class="hint" id="dbStyleThumb"></span>
+      </div>
+      <!-- ★ 拖入区 + 预览（和溶图一样的做法）-->
+      <div id="dbStyleDrop" class="dropzone mini" onclick="document.getElementById('dbStyleFile').click()" style="margin-top:10px">
+        📷 把图片拖到这里，或点这里选择（支持多张，最多 8 张）
+      </div>
+      <div id="dbStylePrev" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:9px"></div>
+
+      <div class="progress" id="dbStyleProg" style="display:none">
+        <div class="bar"><span id="dbStyleBar"></span></div>
+        <div class="progText" id="dbStyleText">准备中…</div>
+      </div>
+      <div class="status" id="dbStyleStatus"></div>
+      <div id="dbStyleMods"></div>
+      <details style="margin-top:10px">
+        <summary class="muted" style="cursor:pointer">📚 我的关键词库（点「填入」复用）</summary>
+        <div id="dbStyleLib" class="mdList"></div>
+      </details>
+    </div>
+    <div class="grid">
+
+      <!-- 左：输入 -->
+      <div class="col-main">
+        <div class="card">
+          <h2>画面描述 <span class="hint" id="costHint">预计 0.00 元</span></h2>
+          <textarea id="prompt" placeholder="用一段话描述你想要的画面…&#10;例：一位淡蓝色长发的动漫少女，日系动画插画风格，柔和赛璐璐上色…"></textarea>
+
+          <div class="libBar">
+            <div class="libHead">
+              <span class="libTitle">提示词库</span>
+              <span class="libCats" id="libCats"></span>
+              <span class="libSpacer"></span>
+              <button class="mini" id="libRandom">随机一条</button>
+              <button class="mini" id="libUndo">撤销</button>
+              <button class="mini" id="libClear">清空</button>
+            </div>
+            <div class="libList" id="libList"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>参考图 <span class="hint">可选，最多 10 张，单张 ≤ 30MB</span></h2>
+          <div class="refRow" id="refRow"></div>
+          <button class="mini" id="refAdd" onclick="document.getElementById('refFile').click()">+ 添加参考图</button>
+          <input type="file" id="refFile" accept="image/*" multiple hidden>
+        </div>
+      </div>
+
+      <!-- 右：参数 + 出图 -->
+      <aside class="col-side">
+        <div class="card">
+          <h2>参数</h2>
+          <label class="f">模型</label>
+          <select id="model"></select>
+          <label class="f">尺寸</label>
+          <select id="size">
+            <option value="1K">1K（1024 左右）</option>
+            <option value="1.5K">1.5K</option>
+            <option value="2K" selected>2K（推荐，约 1~2 分钟）</option>
+            <option value="custom">自定义（宽x高）</option>
+          </select>
+          <div id="customSizeBox" style="display:none">
+            <label class="f">自定义尺寸</label>
+            <input type="text" id="customSize" placeholder="例：2048x1152">
+          </div>
+          <label class="f">输出格式</label>
+          <select id="fmt">
+            <option value="png">PNG</option>
+            <option value="jpeg">JPEG</option>
+          </select>
+          <label class="chk"><input type="checkbox" id="wm"> 加 AI 生成水印</label>
+        </div>
+
+        <div class="card genCard">
+          <button class="primary" id="genBtn">开始生成</button>
+          <div class="progress" id="progress" style="display:none">
+            <div class="bar"><span id="barFill"></span></div>
+            <div class="progText" id="progText">准备中…</div>
+          </div>
+          <div class="status" id="status"></div>
+        </div>
+
+        <div class="card" id="resultCard" style="display:none">
+          <h2>本次结果</h2>
+          <div class="resultBox" id="resultBox"></div>
+          <div class="resultActions">
+            <button class="mini" id="openFolder">打开输出目录</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 标签 2：本地千问生图 ============ -->
+<section class="pane" data-pane="vgen">
+
+    <div class="paneBar">
+      <div class="paneBarTitle">
+        🎬 AI 生视频
+        <span class="hint">智谱 CogVideoX-Flash · 云端免费 · 不占你的显卡</span>
+      </div>
+      <div class="paneBarActions">
+        <span class="pill" id="vgenPill"><span class="dot"></span><span id="vgenPillText">检测中…</span></span>
+        <button class="mini" id="vgenRefresh">刷新状态</button>
+        <button class="mini" id="vgenOpenDir">打开输出目录</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="col-main">
+
+        <div class="card">
+          <h2>💡 AI 帮我写提示词 <span class="hint">一句话就行，它替你扩写成专业提示词</span></h2>
+          <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap">
+            <input type="text" id="vgenIdea" style="flex:1;min-width:240px"
+              placeholder="例：一只猫在窗台晒太阳　/　下雨的霓虹街道上一辆车飞驰而过">
+            <select id="vgenStyle" style="width:auto;min-width:140px">
+              <option>电影感写实</option>
+              <option>日系动漫</option>
+              <option>3D 渲染</option>
+              <option>水墨国风</option>
+              <option>赛博朋克</option>
+              <option>皮克斯卡通</option>
+              <option>纪实胶片</option>
+            </select>
+            <button class="primary small" id="vgenMake">💡 生成 3 条</button>
+          </div>
+          <div class="hint" style="margin-top:5px">
+            用的是智谱免费的 <b>glm-4-flash</b>，不花钱 ✓ 生成后点任意一条就填进下面的框，可以再改
+          </div>
+          <div id="vgenIdeas" style="margin-top:10px"></div>
+          <div class="status" id="vgenIdeaStatus"></div>
+        </div>
+
+        <div class="card">
+          <h2>画面描述 <span class="hint">写清主体 + 动作 + 镜头 + 光线，效果最好</span></h2>
+          <textarea id="vgenPrompt" placeholder="例：一只橘色小猫趴在木窗台上伸懒腰打哈欠，午后阳光斜射进来，毛发细节清晰，暖色调，电影感，镜头缓慢推进"></textarea>
+          <div class="row" style="margin-top:10px">
+            <label class="f" style="margin:0">参考图（可选，图生视频）</label>
+            <button class="mini primary" id="vgenInitPick"
+              onclick="document.getElementById('vgenInitFile').click()">📷 选一张图</button>
+            <input type="file" id="vgenInitFile" accept="image/*" style="display:none">
+            <button class="mini" id="vgenInitClear" style="display:none">✕ 去掉</button>
+            <span class="hint" id="vgenInitName"></span>
+          </div>
+          <div id="vgenInitDrop" class="dropzone mini" style="margin-top:9px"
+            onclick="document.getElementById('vgenInitFile').click()">
+            📷 把图片拖到这里，或点这里选择（图生视频：让这张图动起来）
+          </div>
+          <img id="vgenInitThumb" alt="" style="display:none;max-height:150px;border-radius:8px;margin-top:9px">
+        </div>
+
+        <div class="card">
+          <h2>参数</h2>
+          <label class="f">模型</label>
+          <select id="vgenModel"></select>
+          <div class="hint" id="vgenModelNote" style="margin-top:5px"></div>
+          <label class="f" style="margin-top:12px">画幅</label>
+          <select id="vgenSize">
+            <option value="">默认（1920x1080）</option>
+            <option value="1920x1080">1920×1080 横屏 16:9</option>
+            <option value="1080x1920">1080×1920 竖屏 9:16（抖音）</option>
+            <option value="1280x720">1280×720 横屏</option>
+            <option value="720x1280">720×1280 竖屏</option>
+            <option value="1024x1024">1024×1024 方形</option>
+          </select>
+          <label class="f" style="margin-top:12px">帧率</label>
+          <select id="vgenFps">
+            <option value="">默认</option>
+            <option value="30">30 fps</option>
+            <option value="24">24 fps</option>
+            <option value="60">60 fps</option>
+          </select>
+          <label class="f" style="margin-top:12px">临时 Key（不想存设置里就填这儿）</label>
+          <input type="text" id="vgenKey" placeholder="留空 = 用「设置」里保存的智谱 Key">
+          <div class="row" style="margin-top:14px">
+            <button class="primary" id="vgenGo">开始生成</button>
+          <div class="row" style="margin-top:10px;align-items:center;gap:8px">
+            <label style="font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:6px">
+              <input type="checkbox" id="vgenStrip" checked style="width:16px;height:16px">
+              使用特殊技术手段去除 AI 水印
+            </label>
+            <span class="hint">默认开启：先裁掉带标的一角再无损缩回原尺寸，尺寸不变、看不出痕迹</span>
+          </div>
+            <span class="hint">免费模型约 60~90 秒出一条 5 秒片</span>
+          </div>
+          <div class="progress" id="vgenProg" style="display:none">
+            <div class="bar"><span id="vgenBar"></span></div>
+            <div class="progText" id="vgenText">准备中…</div>
+          </div>
+          <div class="status" id="vgenStatus"></div>
+        </div>
+
+        <div class="card" id="vgenResultCard" style="display:none">
+          <h2>出片</h2>
+          <div class="resultBox" id="vgenResultBox"></div>
+          <details style="margin-top:10px">
+            <summary class="muted" style="cursor:pointer">运行日志</summary>
+            <pre class="logBox" id="vgenLog"></pre>
+          </details>
+        </div>
+
+      </div>
+
+      <div class="col-side">
+        <div class="card">
+          <h2>状态</h2>
+          <div class="kv"><span>智谱 Key</span><b id="vgenKeyState">检测中…</b></div>
+          <div class="kv"><span>输出目录</span><b id="vgenOutDir" style="font-size:11.5px">—</b></div>
+          <p class="muted" style="margin-top:12px">
+            免费额度：注册智谱就送 2000 万 Token；<b>CogVideoX-Flash 视频生成本身免费</b> ✓
+            <br>出口带一个小的「AI生成」水印（免费模型都这样）✓
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <section class="pane" data-pane="qwen">
+
+    <!-- 🎨 参考图风格提取（本地千问生图）-->
+    <div class="card" id="qwStyleCard">
+      <h2>🎨 参考图风格提取 <span class="hint">上传图 → AI 认出风格 → 关键词存本地</span></h2>
+      <p class="muted" style="margin-top:0">
+        挑一张喜欢的图，自动按 <b>画风 / 主体 / 配色 / 光影 / 构图 / 氛围 / 质感 / 细节</b>
+        八个模块提取关键词 ✓ 可以随手改词，再一键填进上面的提示词框，
+        或者存进本地关键词库以后反复用 ✓
+        <br>（走 DeepSeek 的视觉能力，图只发给你自己的 API ✓）
+      </p>
+      <div class="row">
+        <button class="mini primary" id="qwStylePick" onclick="document.getElementById('qwStyleFile').click()">📷 选图片</button>
+        <input type="file" id="qwStyleFile" accept="image/*" multiple style="display:none">
+        <button class="mini" id="qwStyleRun" disabled>🔍 开始识别</button>
+        <button class="mini" id="qwStyleFill" disabled>⬆ 填入提示词</button>
+        <button class="mini" id="qwStyleSave" disabled>💾 存入关键词库</button>
+        <span class="hint" id="qwStyleThumb"></span>
+      </div>
+      <!-- ★ 拖入区 + 预览（和溶图一样的做法）-->
+      <div id="qwStyleDrop" class="dropzone mini" onclick="document.getElementById('qwStyleFile').click()" style="margin-top:10px">
+        📷 把图片拖到这里，或点这里选择（支持多张，最多 8 张）
+      </div>
+      <div id="qwStylePrev" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:9px"></div>
+
+      <div class="progress" id="qwStyleProg" style="display:none">
+        <div class="bar"><span id="qwStyleBar"></span></div>
+        <div class="progText" id="qwStyleText">准备中…</div>
+      </div>
+      <div class="status" id="qwStyleStatus"></div>
+      <div id="qwStyleMods"></div>
+      <details style="margin-top:10px">
+        <summary class="muted" style="cursor:pointer">📚 我的关键词库（点「填入」复用）</summary>
+        <div id="qwStyleLib" class="mdList"></div>
+      </details>
+    </div>
+
+    <!-- 顶部操作栏：右上角「启动后端」 -->
+    <div class="paneBar">
+      <div class="paneBarTitle">
+        🐋 本地千问生图
+        <span class="hint">ComfyUI + Qwen-Image-2.1 · 完全离线 · 免费</span>
+      </div>
+      <div class="paneBarActions">
+        <span class="pill" id="qPill"><span class="dot"></span><span id="qPillText">检测中…</span></span>
+        <button class="primary small" id="qStartBtn">⏻ 启动后端</button>
+        <button class="mini" id="qStopBtn" style="display:none">停止后端</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- 左：说明 + 输入 -->
+      <div class="col-main">
+
+        <div class="card">
+          <h2>本地千问 vs 豆包生图 <span class="hint">有什么不一样</span></h2>
+          <table class="cmp">
+            <thead>
+              <tr><th></th><th>🎨 豆包 Seedream</th><th class="hl">🐋 本地千问（这台电脑）</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>算力在哪</td><td>火山引擎的服务器</td><td class="hl">你自己的显卡</td></tr>
+              <tr><td>要联网吗</td><td>必须联网</td><td class="hl"><b>完全离线</b>，断网也能出图</td></tr>
+              <tr><td>花钱吗</td><td>按张计费（1K≈0.3 元，2K≈0.5 元）</td><td class="hl"><b>免费</b>，只费电</td></tr>
+              <tr><td>要 API Key 吗</td><td>要（还得开通模型）</td><td class="hl"><b>不要</b></td></tr>
+              <tr><td>速度</td><td>2K 约 1~2 分钟</td><td class="hl">1024×1024 约 1 分钟</td></tr>
+              <tr><td>画质</td><td><b>更强</b>：文字渲染、复杂构图更稳</td><td class="hl">够用：二次元 / 插画风格表现好</td></tr>
+              <tr><td>隐私</td><td>提示词和图片要传到云端</td><td class="hl"><b>不出本机</b>，谁也看不到</td></tr>
+              <tr><td>要装什么</td><td>什么都不用装</td><td class="hl">首次下载约 <b>15 GB</b>（ComfyUI + 模型）</td></tr>
+              <tr><td>硬件要求</td><td>无</td><td class="hl">需要 NVIDIA 显卡，显存 ≥ 6 GB</td></tr>
+            </tbody>
+          </table>
+          <p class="muted" style="margin-top:14px">
+            <b>一句话总结：</b>要<b>最强画质</b>、要<b>图里有准确文字</b> → 用豆包；
+            要<b>不花钱</b>、要<b>隐私</b>、要<b>批量试错</b> → 用本地千问。
+            两个可以配合：先用本地千问快速试构图，选中意了再用豆包出精品。
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>画面描述 <span class="hint" id="qSizeHint">1024×1024</span></h2>
+          <textarea id="qPrompt" placeholder="用一段话描述你想要的画面…&#10;本地模型对「画风 + 主体 + 细节」的英文/中文长句都吃得下"></textarea>
+          <!-- ★ 图生图（可选）：给一张底图按它重画 -->
+          <div id="qInitBox" style="margin-top:12px;padding:10px 12px;border:1px solid rgba(127,127,127,.28);border-radius:10px;background:rgba(127,127,127,.06)">
+            <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap">
+              <b style="font-size:13px">🖼 图生图（参考图）</b>
+              <span class="hint">可选。给一张底图，模型就<b>看着这张图</b>按你的提示词改；不给就是纯文生图</span>
+              <button class="mini primary" id="qInitPick" onclick="document.getElementById('qInitFile').click()">📷 选底图</button>
+              <input type="file" id="qInitFile" accept="image/*" style="display:none">
+              <button class="mini" id="qInitClear" style="display:none">✕ 去掉底图</button>
+              <span class="hint" id="qInitName"></span>
+            </div>
+            <img id="qInitThumb" alt="" style="display:none;max-height:130px;border-radius:8px;margin-top:9px">
+            <div id="qDenoiseWrap">
+              <label class="f" style="margin-top:10px">重绘强度 <span class="hint" id="qDenoiseV">0.65</span>
+                <input type="range" id="qDenoise" min="0.2" max="1" step="0.05" value="0.65" style="width:100%">
+              </label>
+              <div class="hint" style="margin-top:3px">
+                越小越像原图 —— <b>0.3</b> 微调风格 / <b>0.65</b> 明显改动但保留构图 / <b>1.0</b> 等于重新画
+              </div>
+            </div>
+            <div class="hint" id="qRefModeHint" style="display:none;margin-top:6px;color:#146c3f">
+              ✓ <b>参考图模式</b>：模型自己决定改动幅度（重绘强度不适用，已隐藏）——
+              提示词直接写「把什么改成什么」效果最好
+            </div>
+          </div>
+
+          <div class="libBar">
+            <div class="libHead">
+              <span class="libTitle">提示词库（和豆包共用一套）</span>
+              <span class="libSpacer"></span>
+              <button class="mini" id="qLibRandom">随机一条</button>
+              <button class="mini" id="qLibClear">清空</button>
+            </div>
+            <div class="libList" id="qLibList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右：后端 / 安装 / 参数 -->
+      <aside class="col-side">
+
+        <div class="card">
+          <h2>后端状态</h2>
+          <div class="kv"><span>ComfyUI</span><b id="qComfyPath">检测中…</b></div>
+          <div class="kv"><span>端口</span><b id="qComfyPort">8188</b></div>
+          <div class="kv"><span>运行</span><b id="qComfyRun">—</b></div>
+          <div class="kv"><span>显卡</span><b id="qGpu">—</b></div>
+          <div class="kv"><span>显存</span><b id="qVram">—</b></div>
+          <p class="muted" id="qVerdict" style="margin-top:12px"></p>
+        </div>
+
+        <div class="card" id="qInstallCard">
+          <h2>安装 / 模型</h2>
+          <div id="qNeedBox"></div>
+          <button class="primary" id="qInstallBtn" style="margin-top:12px">⬇ 一键下载并安装</button>
+          <div class="progress" id="qInstallProg" style="display:none">
+            <div class="bar"><span id="qInstallBar"></span></div>
+            <div class="progText" id="qInstallText">准备中…</div>
+          </div>
+          <div class="status" id="qInstallStatus"></div>
+          <details style="margin-top:12px">
+            <summary class="muted" style="cursor:pointer">安装日志</summary>
+            <pre class="logBox" id="qInstallLog"></pre>
+          </details>
+        </div>
+
+        <div class="card">
+          <h2>参数</h2>
+          <label class="f">画面比例</label>
+          <select id="qAspect">
+            <option value="1:1">1:1 正方形</option>
+            <option value="3:4">3:4 竖版</option>
+            <option value="2:3">2:3 竖版</option>
+            <option value="9:16">9:16 手机壁纸</option>
+            <option value="4:3">4:3 横版</option>
+            <option value="3:2">3:2 横版</option>
+            <option value="16:9">16:9 宽屏</option>
+          </select>
+          <label class="f">清晰度 <span class="hint">总像素档 · 按比例分配宽高</span></label>
+          <select id="qMp">
+            <option value="0.802816">快 · 1024² 级（0.80 MP）</option>
+            <option value="1.048576" selected>推荐 · 1024² 级（1.05 MP）</option>
+            <option value="1.6384">较大 · 1280² 级（1.64 MP）</option>
+            <option value="2.359296">高清 · 1536² 级（2.36 MP · 约慢一倍）</option>
+            <option value="4.194304">超清 · 2048² 级（4.19 MP · 约慢三倍）</option>
+          </select>
+          <div class="hint" id="qMpNote" style="margin:4px 0 0">
+            ★ 这是<b>总像素</b>档：选了什么比例，就按那个比例重新分配宽高 ——
+            实际尺寸看上面「画面描述」右边的实时数字 ✓ 换比例后它会变，不是没生效
+          </div>
+          <label class="f">采样步数 <span class="hint" id="qStepsVal">25</span></label>
+          <input type="range" id="qSteps" min="10" max="50" value="25" style="width:100%">
+          <label class="f">随机种子 <span class="hint">0 = 每次随机；填数字则固定（同一张图）</span></label>
+          <input type="text" id="qSeed" value="0">
+        </div>
+
+        <div class="card genCard">
+          <button class="primary" id="qGenBtn">开始生成</button>
+          <div class="progress" id="qProg" style="display:none">
+            <div class="bar"><span id="qBar"></span></div>
+            <div class="progText" id="qProgText">准备中…</div>
+          </div>
+          <div class="status" id="qStatus"></div>
+        </div>
+
+        <div class="card" id="qResultCard" style="display:none">
+          <h2>本次结果 <span class="hint">免费</span></h2>
+          <div class="resultBox" id="qResultBox"></div>
+          <div class="resultActions">
+            <button class="mini" id="qOpenFolder">打开输出目录</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ Live2D 制作（2026-10-02） ============ -->
+  <section class="pane" data-pane="live2d">
+
+    <div class="paneBar">
+      <div class="paneBarTitle">
+        🎭 Live2D 制作
+        <span class="hint">立绘 → 分层 PSD → 能直接用的 moc3 模型</span>
+      </div>
+      <div class="paneBarActions">
+        <span class="pill" id="l2dPill"><span class="dot"></span><span id="l2dPillText">检测中…</span></span>
+        <button class="mini" id="l2dFreeVram" title="让 ComfyUI 等程序把显存还回来（不关它们）">🧹 腾显存</button>
+        <button class="mini" id="l2dRefresh">刷新状态</button>
+        <button class="mini" id="l2dOpenOut">打开成品目录</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="col-main">
+
+        <div class="card">
+          <h2>① 选立绘 <span class="hint">单人 · 全身正面 · 四肢别交叉 · 背景干净</span></h2>
+          <div class="row">
+            <button class="mini primary" id="l2dPick"
+              onclick="document.getElementById('l2dFile').click()">📷 选一张立绘</button>
+            <input type="file" id="l2dFile" accept="image/*" style="display:none">
+            <button class="mini" id="l2dClear" style="display:none">✕ 去掉</button>
+            <span class="hint" id="l2dFileName"></span>
+          </div>
+          <div id="l2dDrop" class="dropzone mini" style="margin-top:9px"
+            onclick="document.getElementById('l2dFile').click()">
+            🖼 把立绘拖到这里，或点这里选择（会自动填好作品名）
+          </div>
+          <img id="l2dThumb" alt="" style="display:none;max-height:190px;border-radius:10px;margin-top:10px">
+          <label class="f" style="margin-top:12px">作品名（决定输出文件夹名）</label>
+          <input type="text" id="l2dName" placeholder="例：眼镜女学生">
+        </div>
+
+        <div class="card">
+          <h2>② 拆层方式 <span class="hint">二选一</span></h2>
+          <div class="row" id="l2dEngines" style="flex-wrap:wrap"></div>
+          <div class="hint" id="l2dEngineNote" style="margin-top:8px"></div>
+        </div>
+
+        <div class="card">
+          <h2>③ 参数</h2>
+          <div class="row" style="gap:14px;flex-wrap:wrap">
+            <label class="f" style="margin:0">分辨率
+              <select id="l2dRes" style="width:auto">
+                <option value="768">768 · 最省显存</option>
+                <option value="1024" selected>1024 · 推荐</option>
+                <option value="1280">1280 · 最好也最吃显存</option>
+              </select>
+            </label>
+            <label class="f" style="margin:0">随机种子
+              <input type="number" id="l2dSeed" value="42" min="0" max="9999" style="width:96px">
+            </label>
+          </div>
+          <label class="row chk" style="margin-top:10px">
+            <input type="checkbox" id="l2dTblr" style="flex:0 0 auto;width:auto">
+            拆分左右手臂与腿（默认把左右合并）</label>
+          <label class="row chk" style="margin-top:4px">
+            <input type="checkbox" id="l2dRestart" checked style="flex:0 0 auto;width:auto">
+            PSD2Live 里有旧工程时自动重开引擎清空（<b>未保存的改动会丢</b>）</label>
+        </div>
+
+        <div class="card">
+          <h2>④ 开始</h2>
+          <div class="row">
+            <button class="primary" id="l2dGo">🎭 开始制作</button>
+            <button class="mini" id="l2dPickPsd">📂 已有 PSD，只做模型</button>
+          </div>
+          <div id="l2dPsdPanel" style="display:none;margin-top:12px;padding:12px;border:1.5px solid var(--line);border-radius:12px;background:#fafcff">
+            <label class="f" style="margin-top:0">选一个已有的分层 PSD（也可以直接在下面粘路径）</label>
+            <select id="l2dPsdList"></select>
+            <input type="text" id="l2dPsdPath" placeholder="C:\Users\你\Desktop\Live2D素材\<作品名>\xxx.psd"
+              style="margin-top:8px">
+            <div class="row" style="margin-top:9px">
+              <button class="mini primary" id="l2dPsdGo">只用这个 PSD 做模型</button>
+              <button class="mini" id="l2dPsdCancel">收起</button>
+            </div>
+          </div>
+          <div class="progress" id="l2dProg" style="display:none">
+            <div class="bar"><span id="l2dBar"></span></div>
+          </div>
+          <div class="status" id="l2dStatus"></div>
+          <pre class="logBox" id="l2dLog">（还没开始）</pre>
+        </div>
+      </div>
+
+      <div class="col-side">
+        <div class="card">
+          <h2>成品 <span class="hint">moc3 可直接用</span></h2>
+          <div id="l2dFiles" class="hint">还没开始</div>
+        </div>
+        <div class="card">
+          <h2>做过的作品</h2>
+          <div id="l2dWorks" class="hint">读取中…</div>
+        </div>
+        <div class="card">
+          <h2>这页在干什么</h2>
+          <div class="hint" style="line-height:1.75">
+            三步全自动：<b>①拆层</b>（AI 把立绘拆成带深度的语义图层，出分层 PSD）→
+            <b>②导入</b>本机 PSD2Live（自动分层 / 网格 / 绑定 / 物理）→
+            <b>③导出</b> moc3 + cmo3 + 动作 + 贴图。<br><br>
+            <span id="l2dPaths"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 标签 3：DeepSeek Harness ============ -->
+  <section class="pane active" data-pane="dsh">
+
+    <div class="paneBar">
+      <div class="paneBarTitle">
+        🧠 DeepSeek Harness
+        <span class="hint">一键安装 · 填写密钥 · 启动服务</span>
+      </div>
+      <div class="paneBarActions">
+        <span class="pill" id="dshPill"><span class="dot"></span><span id="dshPillText">检测中…</span></span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="col-main">
+
+        <!-- ① API Key 获取方式 -->
+        <div class="card">
+          <h2><span class="stepNo">1</span> 先拿到 API Key</h2>
+          <p>DSH 本身是免费的，但要用 <b>DeepSeek 的模型</b>，需要一把自己的 API Key。</p>
+          <ol class="steps">
+            <li>打开 <a href="https://platform.deepseek.com/" target="_blank">platform.deepseek.com</a> 注册 / 登录</li>
+            <li>左侧点 <b>「充值」</b>，先充一点（<b>10 元够用很久</b>；不充值 Key 用不了）</li>
+            <li>左侧点 <b>「API keys」</b> → <b>「创建 API key」</b></li>
+            <li><b>立刻复制</b>弹出的那串 <code>sk-</code> 开头的字符串
+              <br><span class="muted">⚠️ 关掉弹窗就再也看不到了，只能重新建</span></li>
+            <li>回来粘到下面第 3 步的框里</li>
+          </ol>
+          <div class="row" style="margin-top:14px">
+            <button class="mini" id="dshOpenPlatform">打开充值页</button>
+            <button class="mini" id="dshOpenKeys">打开 API keys 页</button>
+          </div>
+          <p class="muted" style="margin-top:12px">
+            一把 Key 可以给多个程序用，不用重复申请。费用按用量算，用多少扣多少。
+          </p>
+        </div>
+
+        <!-- ② 一键安装 -->
+        <div class="card">
+          <h2><span class="stepNo">2</span> 一键启动 DSH 安装程序</h2>
+          <p class="muted">
+            会自动装 <b>Node.js（便携版，不需要管理员）</b> + <b>DSH 本体</b>，并创建桌面快捷方式。
+            没装过就直接装；装过会帮你检查补齐。
+          </p>
+          <button class="primary" id="dshInstallBtn" style="margin-top:12px">⬇ 一键启动 DSH 安装程序</button>
+          <p class="muted" style="margin-top:10px">
+            如果第 3 步已经填了 API Key，安装时会顺便写进去，省得再填一遍。
+          </p>
+          <div class="progress" id="dshInstallProg" style="display:none">
+            <div class="bar"><span id="dshInstallBar"></span></div>
+            <div class="progText" id="dshInstallText">准备中…</div>
+          </div>
+          <div class="status" id="dshInstallStatus"></div>
+          <details style="margin-top:12px" open>
+            <summary class="muted" style="cursor:pointer">安装输出</summary>
+            <pre class="logBox" id="dshInstallLog">（还没开始）</pre>
+          </details>
+        </div>
+
+        <!-- ②·B 装不上网页端时的退路：官方桌面端（阉割版） -->
+        <div class="card">
+          <h2>💻 实在装不上？可以退一步用桌面端</h2>
+          <p>
+            上面两步装出来的才是<b>完整版</b>（网页端）—— 它能和本机的 AI 功能打通：
+            本地模型、人声分离、溶图、翻唱这些都在这一套里，<b>推荐优先把它装好</b> ✓
+          </p>
+          <p class="muted" style="margin-top:10px">
+            ⚠️ <b>如果实在装不上</b>（缺运行环境、公司电脑有管控、下载被拦…），
+            可以退而用 <b>DeepSeek 官方的桌面端</b>。
+            <br>但要说清楚：<b>那是阉割版，功能会少</b> ——
+            没有和本机 AI 的联动、调不到本地模型、也没有工作站这些标签页的能力，
+            只能当个独立的对话客户端用。
+          </p>
+          <div class="row" style="margin-top:12px">
+            <button class="mini" id="dshDesktopBtn">⬇ 前往官网下载桌面端</button>
+            <span class="hint">官方地址：www.deepseek.com/download</span>
+          </div>
+        </div>
+
+        <!-- ③ 填写 API -->
+        <div class="card">
+          <h2><span class="stepNo">3</span> 填写 API</h2>
+          <label class="f">DeepSeek API Key</label>
+          <div class="row">
+            <input type="password" id="dshKeyInput" placeholder="粘贴 sk- 开头的那串">
+            <button class="mini" id="dshKeySave">保存</button>
+          </div>
+          <p class="muted" style="margin-top:10px">
+            当前：<b id="dshKeyMask">(未设置)</b><br>
+            保存到<b>用户环境变量</b> <code>DEEPSEEK_API_KEY</code> —— DSH 认这个名字，
+            重开 DSH 就生效。只存在你自己电脑上，不会上传。
+          </p>
+          <div class="status" id="dshKeyStatus"></div>
+        </div>
+
+        <!-- ④ 启动 DSH -->
+        <div class="card">
+          <h2><span class="stepNo">4</span> 启动 DSH
+            <span class="hint">会检测后端服务是否在线</span></h2>
+          <div class="row" style="align-items:center">
+            <button class="primary small" id="dshStartBtn">▶ 启动 DSH</button>
+            <button class="mini" id="dshStopBtn">停止</button>
+            <button class="mini" id="dshRecheck">重新检测</button>
+            <span class="pill" id="dshOnlinePill"><span class="dot"></span><span id="dshOnlineText">未检测</span></span>
+          </div>
+          <div id="dshBootBox" class="bootBox" style="display:none">
+            <div class="spinner"></div>
+            <div class="bootText">
+              <b id="dshBootTitle">正在启动 DSH…</b>
+              <span class="bootTimer" id="dshBootTimer">00:00<small>已等待</small></span>
+              <p class="muted" id="dshBootHint">
+                DSH 首次启动要加载插件和前端，通常 <b>1~4 分钟</b>，请耐心等，别关页面。
+              </p>
+            </div>
+          </div>
+          <div id="dshOpenBox" style="display:none;margin-top:14px">
+            <button class="primary" id="dshOpenBtn" style="background:linear-gradient(115deg,#1f9d55,#4ade80)">
+              🌐 打开 DSH 界面
+            </button>
+            <p class="muted" style="margin-top:8px">
+              授权链接（带令牌，<b>手输首页地址会 401，必须用这个</b>）：<br>
+              <code id="dshAuthUrl" style="word-break:break-all;font-size:12px"></code>
+            </p>
+          </div>
+          <div class="kvBox" id="dshOnlineBox" style="margin-top:14px"></div>
+          <p class="muted" style="margin-top:10px">
+            启动后 DSH 会<b>自动打开浏览器</b>并带上授权令牌（自己手输首页地址是打不开的）。
+            <b>不要关掉后台窗口</b>，关掉服务就停了。
+          </p>
+        </div>
+      </div>
+
+      <!-- 右侧：环境状态 -->
+      <aside class="col-side">
+        <div class="card">
+          <h2>环境状态</h2>
+          <div class="kv"><span>Node.js</span><b id="dshNode">—</b></div>
+          <div class="kv"><span>npm</span><b id="dshNpm">—</b></div>
+          <div class="kv"><span>DSH 本体</span><b id="dshBody">—</b></div>
+          <div class="kv"><span>启动器</span><b id="dshLauncher">—</b></div>
+          <div class="kv"><span>API Key</span><b id="dshKeyState">—</b></div>
+          <div class="kv"><span>桌面快捷方式</span><b id="dshLnk">—</b></div>
+          <div class="kv"><span>服务端口</span><b id="dshPort">3080</b></div>
+          <p class="muted" id="dshVerdict" style="margin-top:12px"></p>
+        </div>
+
+        <div class="card">
+          <h2>安装目录</h2>
+          <div class="kv"><span>npm 全局</span></div>
+          <p class="muted" id="dshPrefix" style="word-break:break-all;margin:4px 0 0"></p>
+          <p class="muted" style="margin-top:12px">捆绑的安装程序：</p>
+          <p class="muted" id="dshInstallerDir" style="word-break:break-all;margin:4px 0 0"></p>
+          <div class="row" style="margin-top:12px">
+            <button class="mini" id="dshOpenLog">打开安装日志</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>装完以后</h2>
+          <p class="muted">
+            桌面会出现 <b>「DSH Web」</b>快捷方式，以后双击它就能启动，不用再回这个页面。
+          </p>
+          <p class="muted" style="margin-top:10px">
+            想改模型、聊天记录位置等，在 DSH 网页里的 <b>「设置」</b>里调。
+          </p>
+        </div>
+      </aside>
+    </div>
+  </section>
+  
+
+  <!-- ============ 标签：电脑工具百宝箱 ============ -->
+  <section class="pane" data-pane="toolbox">
+
+    <div class="paneBar">
+      <div class="paneBarTitle">
+        🧰 电脑工具百宝箱
+        <span class="hint">校园网登录 · 内存释放 · 多线程下载器</span>
+      </div>
+      <div class="paneBarActions">
+        <span class="pill" id="tbPill"><span class="dot"></span><span id="tbPillText">读取中…</span></span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="col-main">
+
+        <!-- ============ 工具 1：校园网一键登录 ============ -->
+        <div class="card">
+          <h2>🔓 校园网一键登录
+            <span class="hint">内江师范学院 · 深澜 Srun 认证</span></h2>
+
+          <div class="kvBox">
+            <div class="kv"><span>本机 IP</span><b id="cpIp">—</b></div>
+            <div class="kv"><span>认证门户</span><b id="cpPortal">—</b></div>
+            <div class="kv"><span>登录账号</span><b id="cpUser">—</b></div>
+            <div class="kv"><span>门户侧状态</span><b id="cpPortalState">—</b></div>
+            <div class="kv"><span>互联网连通</span><b id="cpInternet">—</b></div>
+          </div>
+
+          <div class="row" style="margin-top:16px">
+            <button class="primary" id="cpBtn">🔓 一键登录</button>
+            <button class="mini" id="cpForce">强制重登</button>
+            <button class="mini" id="cpRefresh">刷新状态</button>
+            <button class="mini" id="cpCfgBtn">账号设置</button>
+            <span class="pill" id="cpPill"><span class="dot"></span><span id="cpPillText">检测中…</span></span>
+          </div>
+
+          <div class="bootBox" id="cpBusy" style="display:none">
+            <div class="spinner"></div>
+            <div class="bootText">
+              <b id="cpBusyTitle">正在登录校园网…</b>
+              <span class="bootTimer" id="cpTimer">00:00<small>已用时</small></span>
+              <p class="muted">拿挑战码 → 加密账号密码 → 提交认证，通常 5~15 秒。</p>
+            </div>
+          </div>
+
+          <div class="status" id="cpStatus"></div>
+
+          <div id="cpCfgBox" style="display:none;margin-top:16px">
+            <div class="row2">
+              <div>
+                <label class="f">学号 / 账号</label>
+                <input type="text" id="cpUserIn" placeholder="例如 20262143047">
+              </div>
+              <div>
+                <label class="f">密码</label>
+                <input type="password" id="cpPwdIn" placeholder="留空 = 不修改">
+              </div>
+            </div>
+            <div class="row2" style="margin-top:12px">
+              <div>
+                <label class="f">认证方式（必须和网页上选的一致）</label>
+                <select id="cpDomainIn"></select>
+              </div>
+              <div>
+                <label class="f">门户地址</label>
+                <input type="text" id="cpPortalIn" placeholder="http://10.30.4.3">
+              </div>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <button class="primary small" id="cpSave">保存</button>
+              <span class="muted" style="font-size:13px">
+                账号密码只存本机 <code>data\config.json</code>，不上传
+              </span>
+            </div>
+          </div>
+
+          <div class="autoBox" id="cpAutoBox">
+            <div class="autoRow">
+              <div>
+                <b>🚀 开机自启</b>
+                <p class="muted" id="cpAutoDesc">
+                  登录 Windows 后 <b>30 秒</b>自动登录校园网，之后<b>每 5 分钟巡查一次</b>
+                  （断网自动重连）。用计划任务实现，跑的是无窗口的 pythonw，<b>不会闪黑框</b>。
+                </p>
+              </div>
+              <div class="autoActions">
+                <span class="pill" id="cpAutoPill"><span class="dot"></span><span id="cpAutoPillText">检测中…</span></span>
+                <button class="primary small" id="cpAutoBtn">开启</button>
+              </div>
+            </div>
+            <div class="status" id="cpAutoStatus"></div>
+            <div id="cpOldTask" style="display:none;margin-top:12px">
+              <div class="needItem no">
+                <span class="ic">!</span>
+                <span class="nm">检测到旧任务「校园网自动登录-巡查」还在跑
+                  <br><small class="muted">它每 5 分钟调一次老脚本，和新任务功能重复（不冲突，但会做重复功）</small></span>
+                <button class="mini" id="cpOldDel">删掉它</button>
+              </div>
+            </div>
+          </div>
+
+          <details style="margin-top:14px" open>
+            <summary class="muted" style="cursor:pointer">认证日志</summary>
+            <pre class="logBox" id="cpLog">（还没执行）</pre>
+          </details>
+
+          <p class="muted" style="margin-top:12px">
+            用的是你自己的账号，只是把「打开网页 → 输密码 → 点登录」这三步自动化，
+            <b>不绕过任何认证</b>。欠费/被锁定还是要去
+            <a href="http://10.30.4.3:8800" target="_blank">自助服务</a> 处理。
+          </p>
+        </div>
+
+        <!-- ============ 工具 2：内存释放 ============ -->
+        <div class="card">
+          <h2>💾 内存释放 <span class="hint">Windows 标准 API · 前后对比实测</span></h2>
+
+          <div class="memGauge">
+            <div class="memBarWrap">
+              <div class="memBar" id="tbMemBar"></div>
+            </div>
+            <div class="memNums">
+              <div><span class="muted">总内存</span><b id="tbMemTotal">—</b></div>
+              <div><span class="muted">已用</span><b id="tbMemUsed">—</b></div>
+              <div><span class="muted">可用</span><b class="hl" id="tbMemAvail">—</b></div>
+              <div><span class="muted">占用率</span><b id="tbMemLoad">—</b></div>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:16px">
+            <button class="primary" id="tbMemBtn">🧹 立即释放内存</button>
+            <button class="mini" id="tbMemRefresh">刷新</button>
+            <label class="chk"><input type="checkbox" id="tbMemDeep" checked> 深度清理（清空待机列表，需要管理员）</label>
+          </div>
+
+          <div class="bootBox" id="tbMemBusy" style="display:none">
+            <div class="spinner"></div>
+            <div class="bootText">
+              <b>正在释放内存…</b>
+              <span class="bootTimer" id="tbMemTimer">00:00<small>已用时</small></span>
+              <p class="muted">逐进程回收工作集 + 收缩文件缓存，通常几秒完成。</p>
+            </div>
+          </div>
+
+          <div id="tbMemResult" style="display:none;margin-top:16px">
+            <div class="memResult" id="tbMemResultBox"></div>
+            <div id="tbMemSteps" style="margin-top:14px"></div>
+          </div>
+        </div>
+
+        <!-- ============ 工具 3：多线程下载器 ============ -->
+        <div class="card">
+          <h2>⬇️ 多线程自定义下载器 <span class="hint">HTTP Range 分块并发</span></h2>
+
+          <label class="f">下载地址</label>
+          <div class="row">
+            <input type="text" id="tbUrl" placeholder="https://... （直链，支持 Range 的会分块加速）">
+            <button class="mini" id="tbProbe">探测</button>
+          </div>
+
+          <div id="tbProbeBox" style="display:none;margin-top:12px">
+            <div class="kvBox" id="tbProbeInfo"></div>
+          </div>
+
+          <div class="row2" style="margin-top:14px">
+            <div>
+              <label class="f">保存到</label>
+              <div class="row">
+                <input type="text" id="tbFolder" placeholder="点右边选文件夹">
+                <button class="mini" id="tbPickFolder">选择</button>
+              </div>
+            </div>
+            <div>
+              <label class="f">文件名</label>
+              <input type="text" id="tbName" placeholder="（探测后自动填）">
+            </div>
+          </div>
+
+          <label class="f">线程数 <span class="hint" id="tbThreadVal">8</span></label>
+          <input type="range" id="tbThreads" min="1" max="32" value="8" style="width:100%">
+          <p class="muted" style="margin-top:6px">
+            1 = 单线程（最稳）；8~16 通常最快；32 适合大文件，但对方服务器可能限流。
+          </p>
+
+          <div class="row" style="margin-top:16px">
+            <button class="primary" id="tbDlBtn">开始下载</button>
+            <button class="mini" id="tbDlCancel" style="display:none">取消</button>
+          </div>
+
+          <div class="progress" id="tbDlProg" style="display:none">
+            <div class="bar"><span id="tbDlBar"></span></div>
+            <div class="progText" id="tbDlText">准备中…</div>
+          </div>
+
+          <div class="dlStats" id="tbDlStats" style="display:none">
+            <div><span class="muted">已下载</span><b id="tbDlDone">—</b></div>
+            <div><span class="muted">速度</span><b class="hl" id="tbDlSpeed">—</b></div>
+            <div><span class="muted">剩余</span><b id="tbDlEta">—</b></div>
+            <div><span class="muted">线程</span><b id="tbDlThreads">—</b></div>
+          </div>
+
+          <div id="tbSegBox" style="display:none;margin-top:16px">
+            <p class="muted" style="margin-bottom:8px">各线程进度：</p>
+            <div class="segGrid" id="tbSegs"></div>
+          </div>
+
+          <div class="status" id="tbDlStatus"></div>
+        </div>
+
+        <div class="card">
+          <h2>💾 会话备份 <span class="hint">DSH 上下文自动落文本</span>
+            <span class="pill" id="tbBkPill" style="margin-left:auto">读取中…</span>
+          </h2>
+          <p class="muted">
+            DSH <b>自己就会</b>把过长的上下文压缩成摘要（工具结果修剪 / 图片卸载 / 自动压缩都在内核里，不用管）；
+            这里管的是<b>备份</b>：会话长到阈值就自动导出一份人能读的文本，落在
+            <code>D:\DSH-备份\会话文本\</code>。★ <b>被压缩掉的原文也在里面</b>（压缩只是表层替换，原始日志不丢）。
+          </p>
+          <div class="kvBox" id="tbBkTop"></div>
+
+          <div style="margin-top:14px">
+            <p class="muted" style="margin-bottom:6px">各会话进度（超过阈值就会自动备份）：</p>
+            <div id="tbBkSessions"></div>
+          </div>
+
+          <div style="margin-top:14px">
+            <p class="muted" style="margin-bottom:6px">最近的备份文件：</p>
+            <div id="tbBkFiles"></div>
+          </div>
+
+          <div class="row" style="margin-top:14px;flex-wrap:wrap">
+            <button class="primary" id="tbBkRun">💾 立刻备份一次</button>
+            <button class="mini" id="tbBkRefresh">刷新</button>
+            <button class="mini" id="tbBkOpen">📂 打开备份目录</button>
+          </div>
+          <div class="status" id="tbBkStatus"></div>
+          <pre class="log" id="tbBkLog">（还没读取）</pre>
+        </div>
+      </div>
+
+      <aside class="col-side">
+        <div class="card">
+          <h2>实测过的 API</h2>
+          <div class="kv"><span>回收工作集</span><b>EmptyWorkingSet</b></div>
+          <div class="kv"><span>收缩文件缓存</span><b>SetSystemFileCacheSize</b></div>
+          <div class="kv"><span>清空待机列表</span><b>NtSetSystemInformation</b></div>
+          <div class="kv"><span>管理员权限</span><b id="tbIsAdmin">—</b></div>
+          <p class="muted" style="margin-top:12px">
+            前两个不需要管理员；<b>清空待机列表需要</b>，否则会提示权限不足（不影响前两步生效）。
+          </p>
+        </div>
+
+        <div class="card">
+          <h2>关于内存释放</h2>
+          <p class="muted">
+            全程调用 <b>Windows 标准 API</b>，不装驱动、不改注册表、不留后台进程：
+            <code>EmptyWorkingSet</code> · <code>SetSystemFileCacheSize</code> ·
+            <code>NtSetSystemInformation</code>。
+          </p>
+          <p class="muted" style="margin-top:10px">
+            执行前先记一次可用内存，跑完再记一次，两个数的差就是本次释放量 ——
+            <b>数字是实测的，不是估算</b>。
+          </p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 标签 4：作品库（预留） ============ -->
+  <section class="pane" data-pane="matting">
+    <div class="card">
+      <h2>✂️ AI 抠图 <span class="hint">本地 RMBG/BiRefNet，不联网</span>
+        <span class="pill" id="mtPill" style="margin-left:auto">检测中…</span>
+      </h2>
+      <p class="muted">
+        白底/实底图 → <b>透明底 PNG</b>。底层是复用的本地工具（BRIA RMBG 系列 ONNX + onnxruntime），
+        带<b>去色溢</b>处理 —— 白蕾丝、发丝这类边缘不会带一圈白边。
+      </p>
+      <div class="row" style="flex-wrap:wrap;margin-top:10px">
+        <span class="muted" id="mtInfo" style="flex:1;font-size:12.5px"></span>
+        <button class="mini" id="mtFree">释放模型内存</button>
+        <button class="mini" id="mtFolder">打开出片目录</button>
+      </div>
+      <div class="status" id="mtStatus"></div>
+    </div>
+
+    <div class="card">
+      <h2>1️⃣ 选图片 <span class="hint">也可以直接把图拖进来</span></h2>
+      <div class="row">
+        <select id="mtSrc" style="flex:1"><option value="">加载中…</option></select>
+        <button class="mini" id="mtPick">上传图片</button>
+        <button class="mini" id="mtSrcFolder">打开素材目录</button>
+      </div>
+      <input type="file" id="mtFile" accept="image/*" hidden multiple>
+      <div id="mtDrop" class="dropzone">
+        <div class="dropInner">
+          <div style="font-size:30px;line-height:1">🖼️</div>
+          <div><b>把图片拖到这里</b></div>
+          <div class="muted" style="font-size:12.5px">支持 PNG / JPG / WebP，可一次拖多张（最多 40 MB 一张）</div>
+        </div>
+      </div>
+      <div id="mtPreviewBox" style="display:none;margin-top:12px;text-align:center;background:repeating-conic-gradient(#e9edf2 0% 25%,#fff 0% 50%) 50%/18px 18px;border-radius:12px;padding:10px">
+        <img id="mtPreview" style="max-width:100%;max-height:340px;border-radius:8px">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2️⃣ 参数</h2>
+      <label class="f">引擎</label>
+      <select id="mtEngine"></select>
+      <p class="muted" id="mtEngineNote" style="font-size:12.5px"></p>
+
+      <label class="f" style="margin-top:10px">模型</label>
+      <select id="mtModel"></select>
+      <p class="muted" id="mtModelNote" style="font-size:12.5px"></p>
+
+      <div class="row2" style="margin-top:12px">
+        <div>
+          <label class="f">电平下限 <span class="hint" id="mtLoV">0.02</span>
+            <span class="hint">低于此值算全透明</span></label>
+          <input type="range" id="mtLo" min="0" max="0.3" step="0.01" value="0.02" style="width:100%">
+        </div>
+        <div>
+          <label class="f">电平上限 <span class="hint" id="mtHiV">0.98</span>
+            <span class="hint">高于此值算全不透明</span></label>
+          <input type="range" id="mtHi" min="0.7" max="1" step="0.01" value="0.98" style="width:100%">
+        </div>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <div>
+          <label class="f">阈值收边 <span class="hint" id="mtHardV">关</span>
+            <span class="hint">平涂图设 0.5 边缘更脆</span></label>
+          <input type="range" id="mtHard" min="0" max="1" step="0.05" value="0" style="width:100%">
+        </div>
+        <div>
+          <label class="f">头像尺寸 <span class="hint" id="mtAvatarV">不出</span></label>
+          <input type="range" id="mtAvatar" min="0" max="1024" step="64" value="0" style="width:100%">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px;flex-wrap:wrap">
+        <label style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="mtCrop"> 裁掉透明边
+        </label>
+        <label style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="mtNoDecontam"> 关闭去色溢（默认开）
+        </label>
+        <label style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="mtCpu"> 强制用 CPU（默认优先显卡）
+        </label>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="mtGo">开始抠图</button>
+      </div>
+      <div class="prog" id="mtProg">
+        <div class="bar"><span id="mtBar"></span></div>
+        <div class="progText" id="mtProgText">准备中…</div>
+      </div>
+      <pre class="log" id="mtLog">（还没开始）</pre>
+    </div>
+
+    <div class="card" id="mtResultCard" style="display:none">
+      <h2>3️⃣ 结果</h2>
+      <div id="mtResult"></div>
+    </div>
+  </section>
+
+  <section class="pane" data-pane="blend">
+    <div class="card">
+      <h2>🎨 AI 溶图 <span class="hint">把抠好的主体放进风景照</span>
+        <span class="pill" id="blPill" style="margin-left:auto">检测中…</span>
+      </h2>
+      <p class="muted">
+        导入<b>一张风景照</b> + <b>一张抠好图的透明底 PNG</b>，把它自然地合进去。
+        色调自动匹配 + 边缘羽化 + 接触阴影，比硬贴强得多。
+      </p>
+      <div class="status warn" style="font-size:12.5px">
+        <b>两个引擎，都说实话：</b><br>
+        <b>方案 A（算法合成）</b> —— 秒级、零依赖，但<b>不会重新打光</b>：主体白光下拍的、
+        背景黄昏逆光，光向改不了。它能做好的是<b>色调一致、边缘干净、站得住</b>这三件事。<br>
+        <b>方案 B（Qwen 溶图）</b> —— 扩散模型真融合，<b>会重新打光、纠正透视</b>，融得更像真的；
+        代价是吃显存、一次 1~2 分钟、需要 ComfyUI 在跑。
+      </div>
+    </div>
+
+    <div class="card" id="blDemoCard">
+      <h2>🎬 先看效果：背景 ＋ 主体 ＝ 成品</h2>
+      <p class="muted">
+        下面这组就是用它做出来的。点最下面那个按钮，我直接帮你把素材和引擎选好，你只要按「开始溶图」。
+      </p>
+      <div class="demoRow">
+        <figure class="demoFig">
+          <img src="/static/assets/demo-blend/bg.webp" alt="背景：教室日落">
+          <figcaption>① 背景（风景照）</figcaption>
+        </figure>
+        <div class="demoArrow">＋</div>
+        <figure class="demoFig demoFg">
+          <img src="/static/assets/demo-blend/fg.webp" alt="主体：粉发少女（透明底）">
+          <figcaption>② 主体（透明底 PNG）</figcaption>
+        </figure>
+        <div class="demoArrow">＝</div>
+        <figure class="demoFig">
+          <img src="/static/assets/demo-blend/out.webp" alt="成品">
+          <figcaption>③ 成品（方案 B · Qwen 溶图）</figcaption>
+        </figure>
+      </div>
+      <div class="row" style="margin-top:12px;flex-wrap:wrap">
+        <button class="mini" id="blDemoUse">🎬 用这组素材试一下</button>
+        <span class="hint" style="align-self:center">
+          顺手把引擎切到方案 B、在「补充要求」里填好构图 —— 你只负责点「开始溶图」
+        </span>
+      </div>
+      <div class="status" id="blDemoStatus"></div>
+    </div>
+
+    <div class="card">
+      <h2>🧩 选引擎</h2>
+      <div class="row2">
+        <div>
+          <label class="f">溶图引擎</label>
+          <select id="blEngine"><option value="algo">方案 A · 算法合成</option></select>
+          <p class="muted" id="blEngineHint" style="font-size:12.5px;margin-top:8px"></p>
+        </div>
+        <div>
+          <label class="f">补充要求 <span class="hint">方案 B 用得上，很影响结果</span></label>
+          <input type="text" id="blExtra" placeholder="人物全身入镜，站在林间小路上，远景，保持背景不变">
+          <p class="muted" style="font-size:12.5px;margin-top:8px">
+            ★ 这一栏对<b>方案 B</b>影响很大：写清「全身入镜 / 站在哪里 / 远景还是近景」。
+            同一组素材实测 —— <b>留空</b>会切成一张大头照；写上面那串，就得到<b>全身站在小路上</b>。
+            方案 A 不看这栏，它用「2️⃣」里的位置/大小参数手动摆。
+          </p>
+        </div>
+      </div>
+      <div class="status" id="blComfy" style="font-size:12.5px;display:none"></div>
+    </div>
+
+    <div class="card">
+      <h2>1️⃣ 导入素材</h2>
+      <div class="row2">
+        <div>
+          <label class="f">背景（风景照）</label>
+          <select id="blBg"><option value="">加载中…</option></select>
+          <div class="row" style="margin-top:8px">
+            <button class="mini" id="blBgAdd">＋ 上传背景</button>
+          </div>
+          <div id="blBgDrop" class="dropzone mini">
+            <div class="dropInner">
+              <div style="font-size:22px;line-height:1">🏞️</div>
+              <div><b>拖风景照到这里</b></div>
+              <div class="muted" style="font-size:12px">PNG / JPG / WebP</div>
+            </div>
+          </div>
+          <div id="blBgPreview" style="display:none;margin-top:10px">
+            <img id="blBgImg" style="width:100%;border-radius:10px;border:1px solid var(--line)">
+          </div>
+        </div>
+        <div>
+          <label class="f">主体（抠好的透明底图）</label>
+          <select id="blFg"><option value="">加载中…</option></select>
+          <div class="row" style="margin-top:8px">
+            <button class="mini" id="blFgAdd">＋ 上传主体</button>
+            <button class="mini" id="blGoMatting">✂️ 前往抠图</button>
+          </div>
+          <div id="blFgDrop" class="dropzone mini">
+            <div class="dropInner">
+              <div style="font-size:22px;line-height:1">✂️</div>
+              <div><b>拖透明底 PNG 到这里</b></div>
+              <div class="muted" style="font-size:12px">没抠的话点上面「前往抠图」</div>
+            </div>
+          </div>
+          <div id="blFgPreview" style="display:none;margin-top:10px;background:repeating-conic-gradient(#e9edf2 0% 25%,#fff 0% 50%) 50%/16px 16px;border-radius:10px;padding:6px">
+            <img id="blFgImg" style="width:100%;border-radius:6px">
+          </div>
+        </div>
+      </div>
+      <input type="file" id="blBgFile" accept="image/*" hidden>
+      <input type="file" id="blFgFile" accept="image/*" hidden>
+      <p class="muted" id="blFgHint" style="margin-top:8px;font-size:12.5px"></p>
+    </div>
+
+    <div class="card">
+      <h2>2️⃣ 摆放和参数 <span class="hint" id="blParamsHint"></span></h2>
+      <div id="blAlgoParams">
+      <div class="row2">
+        <div>
+          <label class="f">大小 <span class="hint" id="blScaleV">50%</span></label>
+          <input type="range" id="blScale" min="0.05" max="1.6" step="0.01" value="0.5" style="width:100%">
+        </div>
+        <div>
+          <label class="f">水平位置 <span class="hint" id="blXV">50%</span></label>
+          <input type="range" id="blX" min="0" max="1" step="0.005" value="0.5" style="width:100%">
+        </div>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <div>
+          <label class="f">垂直位置 <span class="hint" id="blYV">62%</span></label>
+          <input type="range" id="blY" min="0" max="1" step="0.005" value="0.62" style="width:100%">
+        </div>
+        <div>
+          <label class="f">色调匹配 <span class="hint" id="blCm" >0.75</span>
+            <span class="hint">越大越融进背景</span></label>
+          <input type="range" id="blColorMatch" min="0" max="1" step="0.05" value="0.75" style="width:100%">
+        </div>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <div>
+          <label class="f">边缘羽化 <span class="hint" id="blFv">1.2 px</span></label>
+          <input type="range" id="blFeather" min="0" max="6" step="0.1" value="1.2" style="width:100%">
+        </div>
+        <div>
+          <label class="f">接触阴影 <span class="hint" id="blSv">40%</span></label>
+          <input type="range" id="blShadow" min="0" max="0.9" step="0.05" value="0.4" style="width:100%">
+        </div>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <div>
+          <label class="f">饱和度 <span class="hint" id="blSatV">1.00</span></label>
+          <input type="range" id="blSat" min="0.5" max="1.5" step="0.02" value="1.0" style="width:100%">
+        </div>
+        <div>
+          <label class="f">亮度 <span class="hint" id="blBriV">1.00</span></label>
+          <input type="range" id="blBri" min="0.5" max="1.5" step="0.02" value="1.0" style="width:100%">
+        </div>
+      </div>
+      </div><!-- /blAlgoParams -->
+      <div class="row" style="margin-top:12px;flex-wrap:wrap">
+        <label id="blFlipWrap" style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="blFlip"> 水平翻转
+        </label>
+        <label class="f" style="margin:0 0 0 12px">输出格式</label>
+        <select id="blFmt" style="width:100px">
+          <option value="png">PNG</option>
+          <option value="jpg">JPG</option>
+        </select>
+      </div>
+      <label class="f">存成什么名字</label>
+      <input type="text" id="blName" placeholder="留空自动命名">
+
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="blGo">开始溶图</button>
+        <button class="mini" id="blFolder">打开出片目录</button>
+      </div>
+      <div class="prog" id="blProg">
+        <div class="bar"><span id="blBar"></span></div>
+        <div class="progText" id="blProgText">准备中…</div>
+      </div>
+      <div class="status" id="blStatus"></div>
+      <pre class="log" id="blLog">（还没开始）</pre>
+    </div>
+
+    <div class="card" id="blResultCard" style="display:none">
+      <h2>3️⃣ 结果</h2>
+      <div id="blResult"></div>
+    </div>
+  </section>
+
+  <section class="pane" data-pane="music">
+    <div class="card">
+      <h2>🎵 AI 音乐工坊 <span class="hint">写歌 · 声音包 · 制作器</span>
+        <span class="pill" id="msPill" style="margin-left:auto">检测中…</span>
+      </h2>
+      <div class="row" style="align-items:center;flex-wrap:wrap">
+        <span class="muted" id="msInfo" style="flex:1;font-size:12.5px"></span>
+        <button class="mini" id="msEngineStart">启动引擎</button>
+        <button class="mini" id="msEngineStop">停止引擎（释放内存）</button>
+        <button class="mini" id="msFolder">打开出片目录</button>
+      </div>
+      <div class="status" id="msStatus"></div>
+    </div>
+
+    <div class="card">
+      <h2>✍️ 写歌 <span class="hint">风格标签 + 歌词</span></h2>
+      <div class="row">
+        <input type="text" id="msTitle" placeholder="歌名（可选，会写进文件标签）" style="flex:1">
+        <button class="mini" id="msAI">🤖 AI 写词</button>
+      </div>
+      <label class="f" style="margin-top:12px">风格标签 <span class="hint">英文逗号分隔，越具体越准</span></label>
+      <div class="row" style="margin:2px 0 6px">
+        <button class="mini" id="msFemale">👩 女声</button>
+        <button class="mini" id="msMale">👨 男声</button>
+        <span class="hint" style="margin-left:4px">这两个只影响曲风描述；<b>人声的男女音色主要看上面的「声音包」</b>（实测有效）</span>
+      </div>
+      <textarea id="msTags" rows="2" placeholder="例：light pop, female lead vocal, acoustic guitar, soft drums, 100bpm, C major"></textarea>
+      <label class="f">歌词 <span class="hint">用 [verse] [chorus] [bridge] [inst] 分段</span></label>
+      <textarea id="msLyrics" rows="9" placeholder="[verse]&#10;第一句…&#10;&#10;[chorus]&#10;副歌…"></textarea>
+
+      <div class="row2" style="margin-top:12px">
+        <div>
+          <label class="f">时长（秒）<span class="hint" id="msDurV">120</span></label>
+          <input type="range" id="msDur" min="30" max="300" step="10" value="120" style="width:100%">
+        </div>
+        <div>
+          <label class="f">BPM <span class="hint" id="msBpmV">120</span></label>
+          <input type="range" id="msBpm" min="50" max="200" step="1" value="120" style="width:100%">
+        </div>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <div>
+          <label class="f">语言</label>
+          <select id="msLang"></select>
+        </div>
+        <div>
+          <label class="f">调性</label>
+          <select id="msKey"></select>
+        </div>
+      </div>
+
+      <label class="f" style="margin-top:14px">🎤 声音包 <span class="hint">选了就用它的音色来唱</span></label>
+      <div class="row">
+        <select id="msVoice" style="flex:1">
+          <option value="">（不用，随机音色）</option>
+        </select>
+        <button class="mini" id="msVoiceAdd">＋ 导入</button>
+        <button class="mini" id="msVoicePlay">试听</button>
+      </div>
+      <input type="file" id="msVoiceFile" accept="audio/*" hidden>
+      <audio id="msVoiceAudio" controls style="display:none;width:100%;height:34px;margin-top:8px"></audio>
+
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="msGo">开始生成</button>
+      </div>
+      <div class="prog" id="msProg">
+        <div class="bar"><span id="msBar"></span></div>
+        <div class="progText" id="msProgText">准备中…</div>
+      </div>
+      <pre class="log" id="msLog">（还没开始）</pre>
+    </div>
+
+    <div class="card">
+      <h2>🎬 声音包制作器 <span class="hint">从歌曲/视频里剥出干净人声</span></h2>
+      <p class="muted">
+        给一段素材，用 <b>Demucs</b>（Meta 官方 · MIT）剥出人声 → 截取 → 响度归一化 → 导出成能直接用的声音包。
+      </p>
+      <div class="row" style="margin-top:10px">
+        <input type="text" id="msVpSrc" placeholder="先选一个素材文件…" readonly>
+        <button class="mini" id="msVpPick">选文件</button>
+      </div>
+      <input type="file" id="msVpFile" accept="audio/*,video/*" hidden>
+      <p class="muted" id="msVpInfo" style="font-size:12.5px"></p>
+      <div class="row2" style="margin-top:10px">
+        <div>
+          <label class="f">从第几秒开始 <span class="hint" id="msVpStartV">30</span></label>
+          <input type="range" id="msVpStart" min="0" max="600" step="1" value="30" style="width:100%">
+        </div>
+        <div>
+          <label class="f">取多长 <span class="hint" id="msVpDurV">20 秒</span></label>
+          <input type="range" id="msVpDur" min="5" max="60" step="1" value="20" style="width:100%">
+        </div>
+      </div>
+      <label class="f">存成什么名字</label>
+      <input type="text" id="msVpName" placeholder="例：我的声音">
+      <div class="row" style="margin-top:12px">
+        <button class="primary small" id="msVpGo">开始制作</button>
+      </div>
+      <div class="prog" id="msVpProg">
+        <div class="bar"><span id="msVpBar"></span></div>
+        <div class="progText" id="msVpProgText">准备中…</div>
+      </div>
+      <div class="status" id="msVpStatus"></div>
+      <pre class="log" id="msVpLog">（还没开始）</pre>
+    </div>
+
+    <div class="card" id="msResultCard" style="display:none">
+      <h2>🎧 生成结果</h2>
+      <div id="msResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>🎼 历史作品</h2>
+      <div id="msHistory" class="muted">加载中…</div>
+    </div>
+  </section>
+
+  <!-- ============ 标签：AI 人声分离 ============ -->
+  <section class="pane" data-pane="stem">
+    <div class="grid">
+
+      <div class="col-main">
+        <div class="card">
+          <h2>🎚️ 人声分离 <span class="hint">把一首歌拆成人声 / 伴奏</span>
+            <span class="pill" id="stPill" style="margin-left:auto">检测中…</span>
+          </h2>
+          <p class="muted">
+            引擎是 <b>Demucs htdemucs</b>（Meta 官方，MIT 许可），跑在你自己显卡上 ——
+            <b>不上传、不花钱</b>。模型本机已有缓存，正常不联网。
+          </p>
+          <div class="status warn" id="stTips" style="display:none;font-size:12.5px"></div>
+        </div>
+
+        <div class="card">
+          <h2>1️⃣ 选素材</h2>
+          <select id="stSrc"><option value="">（还没有素材，点下面上传）</option></select>
+          <div class="row" style="margin-top:8px;flex-wrap:wrap">
+            <button class="mini" id="stAdd">＋ 上传音频 / 视频</button>
+            <button class="mini" id="stRefresh">刷新</button>
+          </div>
+          <div id="stDrop" class="dropzone mini">
+            <div class="dropInner">
+              <div style="font-size:22px;line-height:1">🎵</div>
+              <div><b>拖一首歌到这里</b></div>
+              <div class="muted" style="font-size:12px">
+                wav / mp3 / flac / m4a / mp4…（120 MB 以内；更大的直接丢进「分离素材」文件夹）
+              </div>
+            </div>
+          </div>
+          <input type="file" id="stFile" accept="audio/*,video/*" hidden>
+        </div>
+
+        <div class="card">
+          <h2>2️⃣ 怎么拆</h2>
+          <div class="row2">
+            <div>
+              <label class="f">拆成几轨</label>
+              <select id="stMode">
+                <option value="two">两轨：人声 + 伴奏（最常用）</option>
+                <option value="four">四轨：人声 / 鼓 / 贝斯 / 其他</option>
+              </select>
+            </div>
+            <div>
+              <label class="f">输出格式</label>
+              <select id="stFmt">
+                <option value="wav">WAV（无损，文件最大）</option>
+                <option value="flac">FLAC（无损，小一半）</option>
+                <option value="mp3">MP3（有损，最小）</option>
+              </select>
+            </div>
+          </div>
+          <label class="f">存成什么名字 <span class="hint">留空自动命名</span></label>
+          <input type="text" id="stName" placeholder="留空自动命名">
+          <div class="row" style="margin-top:14px;flex-wrap:wrap">
+            <button class="primary" id="stGo">🎚️ 开始分离</button>
+            <button class="mini" id="stFolder">📂 打开出片目录</button>
+            <span class="hint" style="align-self:center">一首歌约 1~3 分钟（整首跑一遍）</span>
+          </div>
+          <div class="prog" id="stProg" style="display:none">
+            <div class="bar"><span id="stBar"></span></div>
+            <div class="progText" id="stProgText">准备中…</div>
+          </div>
+          <div class="status" id="stStatus"></div>
+          <pre class="log" id="stLog">（还没开始）</pre>
+        </div>
+
+        <div class="card" id="stResultCard" style="display:none">
+          <h2>结果</h2>
+          <p class="muted" id="stResMeta" style="font-size:12.5px"></p>
+          <div id="stFiles"></div>
+          <p class="muted" style="font-size:12.5px;margin-top:8px" id="stOutHint"></p>
+        </div>
+      </div>
+
+      <aside class="col-side">
+        <div class="card">
+          <h2>已经出过的片</h2>
+          <p class="muted" style="font-size:12px;margin-bottom:8px" id="stDir"></p>
+          <div id="stOuts"></div>
+        </div>
+
+        <div class="card">
+          <h2>它是什么</h2>
+          <div class="kv"><span>引擎</span><b>Demucs htdemucs</b></div>
+          <div class="kv"><span>来源</span><b>Meta 官方 · MIT 许可</b></div>
+          <div class="kv"><span>跑在哪</span><b>本机显卡（ComfyUI 那套 Python）</b></div>
+          <div class="kv"><span>联网</span><b>不需要（模型已有缓存）</b></div>
+          <p class="muted" style="margin-top:12px">
+            两轨模式的「伴奏」= 鼓 + 贝斯 + 其他三轨相加；要单独调某一部分就用四轨模式。
+          </p>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="pane" data-pane="cover">
+    <div class="card">
+      <h2>🎤 AI 翻唱 <span class="hint">上传歌曲 → 用声音包翻唱</span>
+        <span class="pill" id="cvPill" style="margin-left:auto">检测中…</span>
+      </h2>
+      <p class="muted">
+        把一首歌里的人声换成<b>声音包</b>的音色，再和原伴奏混回去。本地跑，不联网、不花钱。
+      </p>
+      <div class="flow" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:12.5px">
+        <span class="pill">① Demucs 分离人声/伴奏</span>
+        <span class="pill">② Seed-VC 换音色</span>
+        <span class="pill">③ 混音导出</span>
+      </div>
+
+      <label class="f" style="margin-top:16px">① 选歌曲</label>
+      <div class="row">
+        <input type="text" id="cvSrc" placeholder="还没选文件…" readonly>
+        <button class="mini" id="cvPick">选文件</button>
+        <button class="mini" id="cvSrcPlay">试听</button>
+      </div>
+      <input type="file" id="cvFile" accept="audio/*,video/*" hidden>
+      <audio id="cvAudio" controls style="display:none;width:100%;height:36px;margin-top:10px"></audio>
+      <p class="muted" id="cvSrcInfo" style="font-size:12.5px"></p>
+
+      <label class="f" style="margin-top:14px">② 选声音包（换成谁的音色）</label>
+      <select id="cvVoice"><option value="">加载中…</option></select>
+
+      <div class="row2" style="margin-top:14px">
+        <div>
+          <label class="f">扩散步数 <span class="hint" id="cvStepsV">30</span>
+            <span class="hint">高=好但慢</span></label>
+          <input type="range" id="cvSteps" min="10" max="60" step="1" value="30" style="width:100%">
+        </div>
+        <div>
+          <label class="f">声音包权重 <span class="hint" id="cvCfgV">1.5</span>
+            <span class="hint2">越高越像你选的声音包；觉得还留着原唱音色就往上拉</span></label>
+          <input type="range" id="cvCfg" min="0" max="2.5" step="0.05" value="1.5" style="width:100%">
+          <label class="f">去爆破音 <span class="hint" id="cvPolishV">0.6</span>
+            <span class="hint2">压掉 p/t/k 那种气流冲音；觉得闷就调小</span></label>
+          <input type="range" id="cvPolish" min="0" max="1" step="0.05" value="0.6" style="width:100%">
+        </div>
+      </div>
+      <div class="row2" style="margin-top:10px">
+        <div>
+          <label class="f">人声音量 <span class="hint" id="cvVgV">1.00</span></label>
+          <input type="range" id="cvVg" min="0.3" max="1.6" step="0.05" value="1.0" style="width:100%">
+        </div>
+        <div>
+          <label class="f">伴奏音量 <span class="hint" id="cvIgV">0.90</span></label>
+          <input type="range" id="cvIg" min="0.3" max="1.6" step="0.05" value="0.9" style="width:100%">
+        </div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label style="font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="cvF0" checked> 跟随原唱韵律（翻唱建议开，关掉音高会飘）
+        </label>
+      </div>
+      <label class="f">变调（半音，0 = 不变）</label>
+      <input type="number" id="cvSemi" value="0" min="-12" max="12" style="width:110px">
+      <label class="f">存成什么名字</label>
+      <input type="text" id="cvName" placeholder="留空就自动命名">
+
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="cvGo">开始翻唱</button>
+        <button class="mini" id="cvFolder">打开出片目录</button>
+      </div>
+
+      <div class="prog" id="cvProg">
+        <div class="bar"><span id="cvBar"></span></div>
+        <div class="progText" id="cvProgText">准备中…</div>
+      </div>
+      <div class="status" id="cvStatus"></div>
+      <pre class="log" id="cvLog">（还没开始）</pre>
+      <p class="muted" style="font-size:12.5px;margin-top:8px">
+        <b>注意：</b>整首歌要完整跑一遍 Demucs（几分钟），歌越长越久。
+        内存紧张时先关掉 ComfyUI。
+      </p>
+    </div>
+
+    <div class="card" id="cvResultCard" style="display:none">
+      <h2>🎧 翻唱成品</h2>
+      <div id="cvResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>📂 历史翻唱</h2>
+      <div id="cvHistory" class="muted">加载中…</div>
+    </div>
+  </section>
+
+  <section class="pane" data-pane="tts">
+    <div class="card">
+      <h2>📖 声音包朗读 <span class="hint">输入文字 → 用声音包念出来</span>
+        <span class="pill" id="ttsPill" style="margin-left:auto">检测中…</span>
+      </h2>
+      <p class="muted">
+        本地跑，不联网、不花钱。底层是 <b>F5-TTS</b>（官方仓库 · MIT · 零样本克隆，<b>不用训练</b>）。
+      </p>
+
+      <label class="f">① 选声音包</label>
+      <div class="row">
+        <select id="ttsVoice" style="flex:1"><option value="">加载中…</option></select>
+        <button class="mini" id="ttsRefOpen">打开目录</button>
+      </div>
+      <p class="muted" style="font-size:12.5px">
+        声音包 = 一段 12~30 秒的干净人声。没有的话去「🎵 AI 音乐工坊」的
+        <b>声音包制作器</b>里做，能从歌曲或视频里自动剥出来。
+      </p>
+
+      <label class="f" style="margin-top:14px">② 参考音频里念的是什么
+        <span class="hint">填了更快更准；留空会自动识别（慢）</span></label>
+      <input type="text" id="ttsRefText" placeholder="例：风再大，吹不弯我的脊梁。">
+
+      <label class="f" style="margin-top:14px">③ 要朗读的文字
+        <span class="hint" id="ttsCount">0 / 600 字</span></label>
+      <textarea id="ttsText" rows="7" placeholder="在这里输入要念的内容…"></textarea>
+
+      <label class="f">存成什么名字</label>
+      <input type="text" id="ttsName" placeholder="留空就用时间戳">
+
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="ttsGo">开始朗读</button>
+        <button class="mini" id="ttsFolder">打开出片目录</button>
+      </div>
+
+      <div class="prog" id="ttsProg">
+        <div class="bar"><span id="ttsBar"></span></div>
+        <div class="progText" id="ttsProgText">准备中…</div>
+      </div>
+      <div class="status" id="ttsStatus"></div>
+      <pre class="log" id="ttsLog">（还没开始）</pre>
+    </div>
+
+    <div class="card" id="ttsResultCard" style="display:none">
+      <h2>🎧 生成结果</h2>
+      <div id="ttsResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>📂 最近的朗读</h2>
+      <div id="ttsHistory" class="muted">加载中…</div>
+    </div>
+  </section>
+
+  <section class="pane" data-pane="gallery">
+    <div class="card">
+      <h2>🖼️ 作品库 <span class="hint">各标签页的产出都汇到这里</span>
+        <span class="pill" id="galPill" style="margin-left:auto">读取中…</span>
+      </h2>
+      <div class="galCats" id="galCats"></div>
+      <div class="row" style="margin-top:12px;flex-wrap:wrap">
+        <button class="mini" id="galRefresh">🔄 刷新</button>
+        <button class="mini" id="galOpen">📂 打开出片目录</button>
+        <span class="hint" style="align-self:center" id="galInfo"></span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="gallery" id="gallery"></div>
+      <div class="empty" id="galleryEmpty">还没有作品。去任意一个标签页生成一个，这里就会自动出现。</div>
+    </div>
+  </section>
+
+  <!-- ============ 标签 4：设置 ============ -->
+  <section class="pane" data-pane="settings">
+    <div class="card">
+      <h2>📦 本地模型 <span class="hint">缺什么一键补齐，下完自动验官方哈希</span>
+        <button class="mini" id="mdRefresh" style="margin-left:auto">🔄 刷新</button>
+      </h2>
+      <p class="muted" style="margin-top:0">
+        来源只用正规渠道：<b>ModelScope（阿里官方）</b>、<b>HuggingFace 官方</b>、
+        <b>Comfy-Org（ComfyUI 官方）</b>与厂商官方 CDN ✓
+        大小和哈希<b>取自官方登记值</b>，下完逐字节校验，对不上就删掉不用 ✗
+        <br>注：huggingface.co 在国内直连不通，已配<b>备用镜像</b>作后备；
+        但**无论从哪个源下，都要过官方大小 + sha256 校验** ✓
+      </p>
+      <div id="mdList" class="mdList"></div>
+      <div class="progress" id="mdProg" style="display:none">
+        <div class="bar"><span id="mdBar"></span></div>
+        <div class="progText" id="mdText">准备中…</div>
+      </div>
+      <div class="status" id="mdStatus"></div>
+      <details style="margin-top:10px">
+        <summary class="muted" style="cursor:pointer">下载日志</summary>
+        <pre class="logBox" id="mdLog">（还没开始）</pre>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>🧩 运行环境 <span class="hint">「声音包朗读」和「AI 翻唱」需要的引擎</span>
+        <button class="mini" id="egRefresh" style="margin-left:auto">🔄 刷新</button>
+      </h2>
+      <p class="muted" style="margin-top:0">
+        这两个功能要各自一个独立的 Python 环境 ✓ 点「一键安装」会依次做：
+        <b>①</b> 下载 python.org 官方安装包 →
+        <b>②</b> <b>用 Windows 原生验签确认签名者是 Python Software Foundation</b>（不通过就删掉，绝不安装）✗ →
+        <b>③</b> 静默装到本目录（不需要管理员）→
+        <b>④</b> 建虚拟环境 →
+        <b>⑤</b> 从 PyPI 官方装依赖（torch 走 PyTorch 官方索引）→
+        <b>⑥</b> 克隆官方源码 ✓
+      </p>
+      <p class="muted">
+        ⚠️ torch 那一步要下 <b>2~3 GB</b>，国内可能要很久；
+        <b>中途断了可以再点一次</b>，已经装好的会自动跳过 ✓
+      </p>
+      <div id="egList" class="mdList"></div>
+      <div class="progress" id="egProg" style="display:none">
+        <div class="bar"><span id="egBar"></span></div>
+        <div class="progText" id="egText">准备中…</div>
+      </div>
+      <div class="status" id="egStatus"></div>
+      <details style="margin-top:10px">
+        <summary class="muted" style="cursor:pointer">安装日志</summary>
+        <pre class="logBox" id="egLog">（还没开始）</pre>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>账号</h2>
+      <label class="f">火山方舟 API Key</label>
+      <div class="row">
+        <input type="password" id="akInput" placeholder="粘贴 sk- 或火山方舟的 API Key">
+        <button class="mini" id="akSave">保存</button>
+      </div>
+      <p class="muted">当前：<b id="akMask">(未设置)</b>　·　存在本机 <code>data/config.json</code>，不会上传到任何地方。</p>
+      <p class="muted">获取地址：<a href="https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey" target="_blank">方舟控制台 → API Key</a></p>
+    </div>
+
+    <div class="card">
+      <h2>DeepSeek API Key <span class="hint">「🔍 AI 搜索引擎」用</span></h2>
+      <div class="row">
+        <input type="password" id="dsKeyInput" placeholder="粘贴 DeepSeek 的 API Key（sk-…）">
+        <button class="mini" id="dsKeySave">保存</button>
+        <button class="mini danger" id="dsKeyClear">清除</button>
+      </div>
+      <p class="muted">当前：<b id="dsKeyMask">(未设置)</b>　·　只存在本机 <code>data/config.json</code>，不会上传到任何地方。</p>
+      <p class="muted">
+        获取地址：<a href="https://platform.deepseek.com/api_keys" target="_blank">platform.deepseek.com → API 密钥</a>　·
+        联网搜索走 DeepSeek 官方 <b>Anthropic 兼容接口</b>（<code>/anthropic/v1/messages</code>）的<b>原生 web 搜索工具</b>，
+        和 DSH 自己联网用的是同一条通道。
+      </p>
+      <label class="f" style="margin-top:10px">搜索用的模型 <span class="hint">不懂就别改</span></label>
+      <input type="text" id="dsModelInput" placeholder="deepseek-v4-flash">
+      <label class="f" style="margin-top:8px">搜索端点基址 <span class="hint">不懂就别改</span></label>
+      <input type="text" id="dsBaseInput" placeholder="https://api.deepseek.com/anthropic/v1">
+    </div>
+
+    <div class="card">
+      <h2>输出目录</h2>
+      <div class="row">
+        <input type="text" id="dirInput" placeholder="例：你的桌面\豆包出图">
+        <button class="mini" id="dirSave">保存</button>
+        <button class="mini" id="dirOpen">打开</button>
+      </div>
+      <p class="muted">生成好的图会直接存到这里。</p>
+    </div>
+
+    <div class="card">
+      <h2>提示</h2>
+      <p class="muted">每个标签页第一次打开时会弹一个说明。清除下面的记录后，下次打开会重新弹一遍。</p>
+      <button class="mini" id="resetTips">重置所有「首次提示」</button>
+    </div>
+
+    <div class="card">
+      <h2>服务</h2>
+      <p class="muted">后端地址：<code id="svcUrl"></code>　·　工程目录：<code id="rootDir">—</code></p>
+      <button class="mini danger" id="quitBtn">关闭服务</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===================== 首次提示层 ===================== -->
+<div class="tips-layer" id="tipsLayer" hidden>
+  <div class="tips-box">
+    <div class="tips-head">
+      <span class="tipsIcon" id="tipsIcon">🎨</span>
+      <h3 id="tipsTitle">欢迎</h3>
+    </div>
+    <div class="tips-body" id="tipsBody"></div>
+    <div class="tips-foot">
+      <label class="chk"><input type="checkbox" id="tipsSkip"> 不再显示这个提示</label>
+      <button class="primary small" id="tipsOk">我知道了</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/models.js"></script>
+<script src="/static/js/prompt_lib.js"></script>
+<script src="/static/js/style.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/tab-doubao.js"></script>
+<script src="/static/js/tab-qwen.js"></script>
+<script src="/static/js/tab-vgen.js"></script>
+<script src="/static/js/tab-live2d.js"></script>
+<script src="/static/js/tab-toolbox.js"></script>
+<script src="/static/js/tab-dsh.js"></script>
+<script src="/static/js/tab-search.js"></script>
+<script src="/static/js/tab-tts.js"></script>
+<script src="/static/js/tab-stem.js"></script>
+<script src="/static/js/tab-cover.js"></script>
+<script src="/static/js/tab-music.js"></script>
+<script src="/static/js/tab-matting.js"></script>
+<script src="/static/js/tab-blend.js"></script>
+<script src="/static/js/intro.js"></script>
+</body>
+</html>

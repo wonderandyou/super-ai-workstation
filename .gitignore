@@ -1,0 +1,42 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+
+# ---------- 自带的 Python 运行时（约 45 MB，不进仓库；用 Release 的 zip）----------
+runtime/
+
+# ---------- 本机数据 / 产物 / 缓存（含 API Key，绝不提交）----------
+data/
+build/
+downloads/
+打包材料/
+*.log
+config.json
+
+# ---------- 模型权重（体积大，走「本地模型」面板一键下载）----------
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.th
+*.gguf
+
+# ---------- 大件产物 ----------
+*.zip
+*.7z
+*.rar
+*.psd
+*.moc3
+*.cmo3
+
+# ---------- 编辑器 / 系统 ----------
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
