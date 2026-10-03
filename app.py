@@ -421,7 +421,7 @@ DEFAULT_CONFIG = {
     "prices": DEFAULT_PRICES,
     "refCostPerImage": 0.05,
     "siteTitle": "超级AI工作台",
-    "siteAuthor": "Made by 杨家乐（内江师范学院-智建学院）",
+    "siteAuthor": "Made by @奇迹与你",
     # ---- 本地千问（ComfyUI）----
     "comfyRoot": "",          # 空 = 自动探测
     "comfyPort": 8188,

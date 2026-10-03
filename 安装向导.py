@@ -32,7 +32,7 @@ APP_NAME = "超级AI工作台"
 SLOGAN1 = "一切奇迹的起点"
 SLOGAN2 = "与你相遇，便是奇迹"
 CONTACT = "有问题加Q:3153180025"
-AUTHOR = "Made by 杨家乐（内江师范学院-智建学院）"
+AUTHOR = "Made by @奇迹与你"
 
 # 安装包里要复制过去的东西（白名单，宁少不多）
 COPY_FILES = [
