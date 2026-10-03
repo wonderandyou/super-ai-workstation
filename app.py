@@ -1248,6 +1248,18 @@ class Handler(BaseHTTPRequestHandler):
             if not j:
                 return self.send_json({"ok": False, "error": "任务不存在"})
             return self.send_json({"ok": True, "job": j})
+        if path == "/api/features":
+            # ★ 功能注册表（features.py 是**唯一事实来源**）
+            #   前端拿它补齐 导航 / TABS / TAB_KIND —— 加新功能不用改一堆地方 ✓
+            try:
+                import features
+                data = features.payload()
+                if qs.get("audit"):
+                    data["audit"] = features.audit()
+                return self.send_json(data)
+            except Exception as e:
+                return self.send_json({"ok": False, "error": str(e)[:200]})
+
         if path == "/api/models/status":
             if not MODEL_OK:
                 return self.send_json({"ok": False,
@@ -2337,7 +2349,12 @@ def open_url(url):
     注意：不能用 explorer.exe <url> —— 那会被当成"文件"处理，
     在没有文件关联时弹出「该文件没有与之关联的应用」。
     必须走 ShellExecute（os.startfile）。
+
+    ★ 桌面版（exe）里启动器会设 AIWS_NO_BROWSER=1 —— 那时**不弹浏览器**，
+      界面改由启动器的原生窗口显示 ✓
     """
+    if os.environ.get("AIWS_NO_BROWSER") == "1":
+        return False
     try:
         if os.name == "nt":
             os.startfile(url)          # ShellExecute，正确处理 http/https 协议关联

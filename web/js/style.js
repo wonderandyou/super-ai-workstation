@@ -265,11 +265,13 @@
     if (fill) fill.onclick = function () { doFill(false); };
 
     var save = $(P + 'StyleSave');
-    if (save) save.onclick = function () {
+    if (save) save.onclick = async function () {
       var mods = collectMods();
       if (!mods) { setStatus('还没有关键词', 'err'); return; }
       var t = promptText(mods);
-      var title = window.prompt('给这套风格起个名字（可留空）', '') || '';
+      // ★ 原来这里用原生 window.prompt ✗（顶着「127.0.0.1:8200 显示」很丑 ✓）
+      //   换成应用自绘弹窗 ✓（2026-10-03 主人："把所有类似的通知转变为弹窗" ✓）
+      var title = (await AIWS.input('给这套风格起个名字（可留空）', '')) || '';
       (window.AIWS || {}).api('/api/style/save', { modules: mods, prompt: t, title: title }).then(function () {
         setStatus('已存进关键词库 ✓（展开下面能点「填入」复用）', 'ok');
         refreshLib();

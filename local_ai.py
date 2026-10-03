@@ -85,7 +85,11 @@ VAE = MODEL_FILES[2]["name"]
 MODELS_TOTAL = sum(f["size"] for f in MODEL_FILES)
 
 # 候选 ComfyUI 安装位置（自动探测）
+# ★ 第一位 = 统一路径层：安装版 → <安装目录>\engines\ComfyUI；
+#   开发机老位置还在 → 仍返回 D:\ComfyUI ✓
+import paths as _paths
 COMFY_HINTS = [
+    _paths.comfy(),
     r"D:\ComfyUI",
     r"C:\ComfyUI",
     os.path.join(ROOT, "local", "ComfyUI_windows_portable"),
@@ -603,7 +607,7 @@ def install_worker(jid, cfg):
     """一键安装：7zr -> ComfyUI 便携包 -> 解压 -> 三个模型"""
     try:
         cfg = cfg or {}
-        inst = (cfg.get("installDir") or os.path.join(ROOT, "local")).strip()
+        inst = (cfg.get("installDir") or _paths.engines_root()).strip()
         os.makedirs(inst, exist_ok=True)
         job_set(jid, percent=0, detail="准备安装目录")
 

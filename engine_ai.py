@@ -36,7 +36,8 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
-LOCAL = os.path.join(ROOT, "local")
+import paths as _paths                      # ★ 统一路径层
+LOCAL = _paths.engines_root()               # Python 运行时 → <安装目录>\engines
 
 # ---------------------------------------------------------------- 常量
 
@@ -54,7 +55,7 @@ PYTORCH_INDEX = "https://download.pytorch.org/whl/cu124"
 ENGINES = {
     "f5tts": {
         "name": "F5-TTS（声音包朗读）",
-        "dir": os.path.join(LOCAL, "f5tts"),
+        "dir": _paths.f5tts(),              # ★ 装到「应用真正会去找」的位置
         "repo": "https://github.com/SWivid/F5-TTS.git",
         "pip": ["torch==2.4.1", "torchaudio==2.4.1"],
         "pip_index": PYTORCH_INDEX,
@@ -67,7 +68,7 @@ ENGINES = {
     },
     "seedvc": {
         "name": "Seed-VC（AI 翻唱）",
-        "dir": os.path.join(LOCAL, "seedvc"),
+        "dir": _paths.seedvc(),             # ★ 同上
         "repo": "https://github.com/Plachta/Seed-VC.git",
         "pip": ["torch==2.4.1", "torchaudio==2.4.1"],
         "pip_index": PYTORCH_INDEX,

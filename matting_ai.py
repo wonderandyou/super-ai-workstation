@@ -23,7 +23,8 @@ import sys
 import threading
 import time
 
-MATTING_DIR = os.path.join(os.path.expanduser("~"), "Documents", "抠图")
+import paths as _paths          # ★ 统一路径层
+MATTING_DIR = _paths.matting_dir()
 MATTING_APP = os.path.join(MATTING_DIR, "抠图-AI.py")
 INNER_NAME = "aiws_matting"
 
@@ -129,7 +130,7 @@ def status():
             {"id": "comfy", "name": "ComfyUI 内置 BiRefNet",
              "note": "用 ComfyUI 的节点跑；需要 ComfyUI 在跑（会自动启动，慢一些）",
              "ready": os.path.isfile(os.path.join(
-                 r"D:\ComfyUI\ComfyUI\models\background_removal", COMFY_BG_MODEL)),
+                 _paths.comfy_models(), "background_removal", COMFY_BG_MODEL)),
              "comfyAlive": _comfy_alive()},
         ],
         "defaultEngine": "onnx",
@@ -247,8 +248,8 @@ def run_worker(jid, p):
 #  引擎二：ComfyUI 内置 BiRefNet
 # --------------------------------------------------------------------------
 COMFY_PORT = 8188
-COMFY_IN = r"D:\ComfyUI\ComfyUI\input"
-COMFY_OUT = r"D:\ComfyUI\ComfyUI\output"
+COMFY_IN = _paths.comfy_input()
+COMFY_OUT = _paths.comfy_output()
 COMFY_BG_MODEL = "birefnet.safetensors"
 
 
@@ -289,8 +290,8 @@ def _ensure_comfy(jid):
     if not started:
         # 兜底：自己起，但要照着 local_ai 的参数来，并且写日志
         import subprocess
-        exe = r"D:\ComfyUI\python_embeded\python.exe"
-        main = r"D:\ComfyUI\ComfyUI\main.py"
+        exe = _paths.comfy_py()
+        main = os.path.join(_paths.comfy_dir(), "main.py")
         if not os.path.isfile(exe) or not os.path.isfile(main):
             raise RuntimeError("找不到 ComfyUI：%s" % exe)
         logdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
@@ -300,7 +301,7 @@ def _ensure_comfy(jid):
         subprocess.Popen([exe, "-s", main, "--windows-standalone-build",
                           "--disable-auto-launch", "--port", str(COMFY_PORT),
                           "--listen", "127.0.0.1"],
-                         cwd=r"D:\ComfyUI\ComfyUI", creationflags=flags,
+                         cwd=_paths.comfy_dir(), creationflags=flags,
                          stdout=logf, stderr=subprocess.STDOUT,
                          stdin=subprocess.DEVNULL)
 
@@ -355,7 +356,7 @@ def run_comfy_worker(jid, p):
         if not os.path.isfile(src):
             raise RuntimeError("找不到图片，请先上传")
 
-        bgp = os.path.join(r"D:\ComfyUI\ComfyUI\models\background_removal", COMFY_BG_MODEL)
+        bgp = os.path.join(_paths.comfy_models(), "background_removal", COMFY_BG_MODEL)
         if not os.path.isfile(bgp):
             raise RuntimeError("ComfyUI 的抠图模型不在：%s" % bgp)
 

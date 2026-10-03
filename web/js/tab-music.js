@@ -102,7 +102,7 @@
     // ★ 实测：人声的男女音色**主要看声音包**（带女声参考 193Hz vs 无参考 161Hz）
     //   所以「有声音包却没选」= 大概率会唱出你不想要的性别 → 提醒一下 ✓
     if (!$('msVoice').value && (window.__msVoices || []).length) {
-      if (!confirm('你还没有选「声音包」。\n\n' +
+      if (await AIWS.no('你还没有选「声音包」。\n\n' +
           '实测：人声的男女音色主要取决于声音包（选了女声包才会唱女声），\n' +
           '风格标签里写 female / male 的影响很小。\n\n' +
           '要继续（不指定音色）吗？')) { return }
@@ -259,7 +259,7 @@
     $('msMale').onclick = function () { setGender('m') };
 
     $('msAI').onclick = async function () {
-      var p = prompt('想让 AI 写一首什么样的歌？\n（描述主题、情绪、风格、语言）',
+      var p = await AIWS.input('想让 AI 写一首什么样的歌？\n（描述主题、情绪、风格、语言）',
         '写一首关于' + ($('msTitle').value || '故乡') + '的中文歌，' + ($('msTags').value || '流行'));
       if (!p) return;
       setStatus('msStatus', 'AI 正在写…', '');
@@ -311,7 +311,7 @@
       loadInfo();
     };
     $('msEngineStop').onclick = async function () {
-      if (!confirm('停止 ComfyUI？\n\n它是音乐生成的必需引擎，但最占内存（几个 GB）。\n下次生成时会自动重新启动。')) return;
+      if (await AIWS.no('停止 ComfyUI？\n\n它是音乐生成的必需引擎，但最占内存（几个 GB）。\n下次生成时会自动重新启动。')) return;
       var r = await api('/api/music/engine', { action: 'stop' });
       setStatus('msStatus', r.ok ? '✓ 引擎已停止，内存已释放' : ('停止失败：' + (r.error || '')),
         r.ok ? 'ok' : 'err');

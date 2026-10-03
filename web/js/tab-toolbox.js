@@ -155,7 +155,7 @@
 
   async function cpAutoToggle() {
     const want = !autoOn;
-    if (want && !confirm('开启开机自启？\n\n会创建一个计划任务：\n' +
+    if (want && await AIWS.no('开启开机自启？\n\n会创建一个计划任务：\n' +
         '· 登录 Windows 后 30 秒自动登录校园网\n' +
         '· 之后每 5 分钟巡查一次，断网自动重连\n' +
         '· 用 pythonw 运行，不弹窗口\n\n' +
@@ -184,7 +184,7 @@
   }
 
   async function cpOldDel() {
-    if (!confirm('删除旧的「校园网自动登录-巡查」任务？\n\n（旧脚本文件不会被删，只是不再自动跑）')) return;
+    if (await AIWS.no('删除旧的「校园网自动登录-巡查」任务？\n\n（旧脚本文件不会被删，只是不再自动跑）')) return;
     $('cpOldDel').disabled = true;
     try {
       const r = await window.AIWS.api('/api/campus/autostart', { action: 'removeOld' });
@@ -229,7 +229,7 @@
     $('tbMemBusy').style.display = 'flex';
     memT0 = Date.now();
     if (memTick) clearInterval(memTick);
-    memTick = setInterval(function () {
+    memTick = setInterval(async function () {
       $('tbMemTimer').innerHTML = fmtClock(Math.floor((Date.now() - memT0) / 1000)) + '<small>已用时</small>';
     }, 200);
 
@@ -269,7 +269,7 @@
         '占用率 ' + x.loadBefore + '% → ' + x.loadAfter + '%</div>';
 
       $('tbMemSteps').innerHTML = '<p class="muted" style="margin-bottom:8px">各步骤结果：</p>' +
-        x.steps.map(function (s) {
+        x.steps.map(async function (s) {
           return '<div class="needItem ' + (s.ok ? 'ok' : 'no') + '">' +
             '<span class="ic">' + (s.ok ? '✓' : '✗') + '</span>' +
             '<span class="nm">' + window.AIWS.esc(s.name) +
@@ -382,7 +382,7 @@
   }
 
   async function cancelDl() {
-    if (!confirm('确定取消下载吗？\n\n（当前分块会停下，已下载的部分保留在 .partN 文件里）')) return;
+    if (await AIWS.no('确定取消下载吗？\n\n（当前分块会停下，已下载的部分保留在 .partN 文件里）')) return;
     if (curJob) await window.AIWS.api('/api/toolbox/dl/cancel', { job: curJob });
     if (dlTimer) { clearInterval(dlTimer); dlTimer = null; }
     $('tbDlBtn').disabled = false;
@@ -525,7 +525,7 @@
     $('tbPickFolder').addEventListener('click', async function () {
       const r = await window.AIWS.api('/api/openfolder', {});
       if (!r.ok) { alert('打开输出目录失败：' + (r.error || '')); return; }
-      const d = prompt('把保存目录粘进来（可先用「打开输出目录」找位置）：', $('tbFolder').value || '');
+      const d = await AIWS.input('把保存目录粘进来（可先用「打开输出目录」找位置）：', $('tbFolder').value || '');
       if (d && d.trim()) $('tbFolder').value = d.trim();
     });
     loadMemory();

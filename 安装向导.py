@@ -34,15 +34,34 @@ SLOGAN2 = "与你相遇，便是奇迹"
 CONTACT = "有问题加Q:3153180025"
 AUTHOR = "Made by @奇迹与你"
 
-# 安装包里要复制过去的东西（白名单，宁少不多）
-COPY_FILES = [
-    "app.py", "gallery_ai.py", "model_ai.py", "search_ai.py", "stem_ai.py",
-    "cover_ai.py", "tts_ai.py", "music_ai.py", "matting_ai.py", "blend_ai.py",
-    "local_ai.py", "dsh_ai.py", "video_ai.py", "campus.py", "toolbox.py",
-    "_stem_worker.py", "_cover_vc.py", "_cover_sep.py", "_tts_worker.py",
-    "说明.txt", "使用说明.txt",
+# 安装包里要复制过去的东西
+# ★ 不手写白名单 ✗ —— 踩过：漏了 live2d_ai.py，别人装完那一页直接是坏的
+#   改成**自动扫描**（规则和打包用的 _build_zip.py 一致），只会多不会少 ✓
+FILES_KEEP = [                       # 以下划线开头但运行时必需的，点名保留
+    "_stem_worker.py", "_tts_worker.py",
+    "_cover_vc.py", "_cover_sep.py", "_cover_polish.py", "_cover_slimref.py",
 ]
-COPY_DIRS = ["web", "dsh"]          # web = 界面；dsh = 高速工作流的安装器
+COPY_DIRS = ["web", "dsh", "live2d", "comfy_nodes"]   # web=界面 dsh=工作流安装器 live2d=建模 comfy_nodes=ComfyUI 节点
+
+
+def scan_files(src):
+    """扫出该装过去的文件（**自动**，别手写清单 ✗）"""
+    out = []
+    try:
+        for f in sorted(os.listdir(src)):
+            if not f.endswith(".py"):
+                continue
+            if f.startswith("_") or f.startswith(("check_", "test_")):
+                continue
+            out.append(f)
+    except OSError:
+        pass
+    # ★ 不再带 启动.vbs / 启动.cmd —— 那俩是「开浏览器」的旧方式，现已改成原生窗口 ✓
+    for f in FILES_KEEP + ["说明.txt", "使用说明.txt", "超级AI工作台.ico",
+                           "LICENSE", "README.md"]:
+        if os.path.isfile(os.path.join(src, f)):
+            out.append(f)
+    return sorted(set(out))
 
 BG = "#f4f9ff"
 FG = "#123a6b"
@@ -242,7 +261,8 @@ class Wizard(tk.Tk):
 
     # ---------------------------------------------------------------- 外框
     def _default_dir(self):
-        for c in ("D:\\AI工作站", "C:\\AI工作站"):
+        # ★ 默认装到 D:\超级AI工作台（主人 2026-10-03 指定 ✓）
+        for c in ("D:\\超级AI工作台", "D:\\AI工作站", "C:\\AI工作站"):
             drv = os.path.splitdrive(c)[0] + "\\"
             if os.path.isdir(drv):
                 try:
@@ -342,7 +362,7 @@ class Wizard(tk.Tk):
         except OSError:
             free = 0
         src_sz = sum(os.path.getsize(os.path.join(self.src, f))
-                     for f in COPY_FILES if os.path.isfile(os.path.join(self.src, f)))
+                     for f in scan_files(self.src))
         src_sz += sum(dir_size(os.path.join(self.src, d))
                       for d in COPY_DIRS if os.path.isdir(os.path.join(self.src, d)))
 
@@ -410,6 +430,14 @@ class Wizard(tk.Tk):
         self.log_text.configure(state="disabled")
 
     def log(self, m):
+        # ★ 同时落盘 —— 安装中途出问题时，这个文件就是唯一线索 ✓
+        try:
+            f = getattr(self, "_logf", None)
+            if f:
+                f.write("%s\n" % m)
+                f.flush()
+        except Exception:
+            pass
         if not self.log_text:
             return
         self.log_text.configure(state="normal")
@@ -477,11 +505,52 @@ class Wizard(tk.Tk):
         else:
             self.log("  ✓ Pillow 已经在了")
 
-        # 自检：自带的运行时到底能不能跑、Pillow 在不在
+        # pywebview —— 原生窗口用（窗口.py 就跑在这份自带的运行时里）
+        if not os.path.isdir(os.path.join(sp, "webview")):
+            wdir = os.path.join(self.src, "wheels")
+            # ★ 优先**直接把 wheel 解进 site-packages**
+            #   踩过：打包成 exe 后 sys.executable 是 **exe 自己** ✗ → 跑不了 pip ✗
+            #   → pywebview 装不上 → 界面只能退回浏览器 ✗
+            #   解 wheel 不依赖任何外部程序，和上面 Pillow 那步同一个套路 ✓
+            got = 0
+            if os.path.isdir(wdir):
+                for _f in sorted(os.listdir(wdir)):
+                    if not _f.endswith(".whl"):
+                        continue
+                    try:
+                        with zipfile.ZipFile(os.path.join(wdir, _f)) as _z:
+                            _z.extractall(sp)
+                        got += 1
+                    except Exception as _e:
+                        self.log("  · wheel 解不开：%s（%s）" % (_f, _e))
+            if got:
+                self.log("  ✓ pywebview 好了（解了 %d 个 wheel → 界面用原生窗口）" % got)
+            else:
+                # 兜底：源码方式跑（没打包）时还能用 pip ✓
+                import sys as _sys
+                cmd = [_sys.executable, "-m", "pip", "install", "--target", sp,
+                       "--upgrade", "--no-cache-dir", "--disable-pip-version-check"]
+                if os.path.isdir(wdir) and os.listdir(wdir):
+                    cmd += ["--find-links", wdir]
+                cmd += ["pywebview==6.2.1"]
+                try:
+                    self.log("  装 pywebview（原生窗口用，稍等）…")
+                    r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800,
+                                       creationflags=0x08000000 if os.name == "nt" else 0)
+                    if r.returncode == 0:
+                        self.log("  ✓ pywebview 好了（界面会用原生窗口打开）")
+                    else:
+                        self.log("  · pywebview 没装上 —— 界面会退回浏览器窗口")
+                except Exception as e:
+                    self.log("  · pywebview 装出错：%s" % e)
+        else:
+            self.log("  ✓ pywebview 已经在了")
+
+        # 自检：自带的运行时到底能不能跑、Pillow / pythonnet 在不在
         pyw = os.path.join(rt, "pythonw.exe")
         try:
             r = subprocess.run([pyw, "-c",
-                                "import sys, PIL; print(sys.version.split()[0], PIL.__version__)"],
+                                "import sys, PIL, clr; print(sys.version.split()[0], PIL.__version__)"],
                                capture_output=True, text=True, timeout=180,
                                creationflags=0x08000000 if os.name == "nt" else 0)
             if r.returncode == 0:
@@ -553,6 +622,13 @@ class Wizard(tk.Tk):
     def do_install(self):
         self.installing = True
         dst = self.install_dir.get().strip()
+        # ★ 安装日志落盘：装到一半崩了也能查（守护线程里的异常会被吞掉 ✗）
+        try:
+            os.makedirs(os.path.join(dst, "data"), exist_ok=True)
+            self._logf = open(os.path.join(dst, "data", "_安装日志.txt"), "w",
+                              encoding="utf-8")
+        except Exception:
+            self._logf = None
         try:
             self.log("安装位置：%s" % dst)
             self.log("来源：%s" % self.src)
@@ -563,7 +639,7 @@ class Wizard(tk.Tk):
             self.log("── 第 2 步：复制程序文件 ──")
             os.makedirs(dst, exist_ok=True)
 
-            files = [f for f in COPY_FILES if os.path.isfile(os.path.join(self.src, f))]
+            files = scan_files(self.src)
             dirs = [d for d in COPY_DIRS if os.path.isdir(os.path.join(self.src, d))]
             total = sum(os.path.getsize(os.path.join(self.src, f)) for f in files)
             total += sum(dir_size(os.path.join(self.src, d)) for d in dirs)
@@ -592,12 +668,13 @@ class Wizard(tk.Tk):
                     self.set_pct(100.0 * done / max(total, 1), rel)
                 self.log("  ✓ %s\\" % d)
 
-            # 建目录
+            # 建目录（含模型 / 引擎根 —— 以后下载的东西都进这里）
             for sub in ("data", os.path.join("data", "搜索历史"), os.path.join("data", "分离素材"),
                         os.path.join("data", "分离出片"), os.path.join("data", "溶图背景"),
                         os.path.join("data", "溶图主体"), os.path.join("data", "溶图出片"),
                         os.path.join("data", "抠图出片"), os.path.join("data", "翻唱出片"),
-                        os.path.join("data", "朗读出片")):
+                        os.path.join("data", "朗读出片"),
+                        "models", "engines"):
                 os.makedirs(os.path.join(dst, sub), exist_ok=True)
             self.log("")
             self.log("  ✓ 运行时目录建好了")
@@ -610,12 +687,32 @@ class Wizard(tk.Tk):
                     json.dump({
                         "siteTitle": APP_NAME, "siteSlogan": SLOGAN1, "siteSlogan2": SLOGAN2,
                         "siteAuthor": AUTHOR, "contact": CONTACT,
+                        # ★ 模型 / 引擎的根目录 = 用户选的安装目录
+                        #   paths.py 读它 → 以后所有下载的模型都落在这里 ✓
+                        "homeRoot": dst,
                     }, f, ensure_ascii=False, indent=2)
                 self.log("  ✓ 写好初始配置（里面没有任何密钥）")
+                self.log("  ✓ 模型/引擎根目录 → %s（以后下的模型都放这儿）" % dst)
 
             # 零窗口启动器 + 快捷方式
             self.log("")
             if self.do_shortcut.get():
+                # ★★ 快捷方式**优先建到开始菜单**
+                #    2026-10-03 实测：开了智能应用控制(SAC)的机器上，
+                #    **新建到桌面的 .lnk 一律被拦** ✗，而**开始菜单放行** ✓
+                _pyw = find_pythonw(dst)
+                _entry = os.path.join(dst, "窗口.py")
+                if not os.path.isfile(_entry):
+                    _entry = os.path.join(dst, "app.py")
+                _sm = os.path.join(os.environ.get("APPDATA", ""), "Microsoft",
+                                   "Windows", "Start Menu", "Programs")
+                if os.path.isdir(_sm):
+                    _slnk = os.path.join(_sm, APP_NAME + ".lnk")
+                    if make_shortcut(_slnk, _pyw, '"%s"' % _entry, dst,
+                                     APP_NAME + " · " + SLOGAN1):
+                        _set_lnk_icon(_slnk, os.path.join(dst, "超级AI工作台.ico"))
+                        self.log("  ✓ 开始菜单快捷方式（SAC 不会拦，可固定到任务栏 ✓）")
+                        self.log("     开始菜单里搜「%s」就能找到" % APP_NAME)
                 dt = desktop_dir()
                 existing = []
                 try:
@@ -626,16 +723,32 @@ class Wizard(tk.Tk):
                     pass
                 if existing:
                     # 桌面上已经有一个了 —— 不重复建、更不覆盖主人的 ✓
-                    self.log("  · 桌面existing快捷方式（%s），就不重复建了 ✓"
+                    self.log("  · 桌面已有快捷方式（%s），不重复建 ✓"
                              % "、".join(existing[:4]))
                 else:
-                    pyw = find_pythonw(dst)
-                    lnk = os.path.join(dt, APP_NAME + ".lnk")
-                    ok = make_shortcut(lnk, pyw, '"%s"' % os.path.join(dst, "app.py"),
-                                       dst, APP_NAME + " · " + SLOGAN1)
-                    self.log(("  ✓ 桌面快捷方式：%s\n     指向 %s（自带运行时，pythonw 没有控制台 → 绝不闪黑框）"
-                              % (lnk, pyw)) if ok
-                             else "  ✗ 快捷方式没建成（可以手动建一个指向 app.py 的）")
+                    # ★★ 桌面上放的是 **启动器 exe 本体**（不是 .lnk ✗）
+                    #   实测：桌面新建的 .lnk 会被 SAC 拦 ✗（"危险文件扩展名"），
+                    #   但**不自解压的原生 exe** 放桌面双击没问题 ✓✓
+                    #   所以这里直接把 payload 里的「启动器.exe」拷到桌面 ✓
+                    lnc = os.path.join(dst, "启动器.exe")
+                    if not os.path.isfile(lnc):
+                        lnc = os.path.join(self.src, "启动器.exe")
+                    if os.path.isfile(lnc):
+                        tgt = os.path.join(dt, APP_NAME + ".exe")
+                        try:
+                            shutil.copy2(lnc, tgt)
+                            self.log("  ✓ 桌面启动器：%s（原生 exe · 双击即开 ✓）" % tgt)
+                            # 装到非默认目录时，写个 home.txt 告诉启动器本体在哪 ✓
+                            if os.path.normcase(os.path.abspath(dst)) != \
+                               os.path.normcase(os.path.abspath("D:\\超级AI工作台")):
+                                with open(os.path.join(dt, "home.txt"), "w",
+                                          encoding="utf-8") as fh:
+                                    fh.write(dst + "\n")
+                                self.log("    （另外写了个 home.txt，把本体位置告诉它 ✓）")
+                        except Exception as e:
+                            self.log("  · 桌面启动器没放成：%s" % e)
+                    else:
+                        self.log("  · 包里没有「启动器.exe」，跳过桌面启动器 ✗")
 
             self.set_pct(100, "装好了")
             self.log("")
@@ -644,22 +757,28 @@ class Wizard(tk.Tk):
             if self.do_launch.get():
                 self.after(300, lambda: self.launch(dst))
         except Exception as e:
+            import traceback
             self.log("")
             self.log("✗ 出错了：%s" % e)
+            for _ln in traceback.format_exc().splitlines():
+                self.log("   " + _ln)
             self.after(0, lambda: messagebox.showerror("安装失败", str(e)))
             self.after(0, lambda: self.show(3))
         finally:
             self.installing = False
 
     def launch(self, dst):
-        """启动工作站 —— 用 pythonw，不弹任何窗口 ✓"""
+        """启动工作站 —— 用 pythonw 起「窗口.py」，界面是**原生窗口**（不开浏览器）✓"""
         try:
             pyw = find_pythonw()
             flags = 0x00000008 | 0x08000000        # DETACHED_PROCESS | CREATE_NO_WINDOW
-            subprocess.Popen([pyw, os.path.join(dst, "app.py")], cwd=dst,
+            entry = os.path.join(dst, "窗口.py")
+            if not os.path.isfile(entry):
+                entry = os.path.join(dst, "app.py")
+            subprocess.Popen([pyw, entry], cwd=dst,
                              creationflags=flags, stdout=subprocess.DEVNULL,
                              stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
-            self.log("  ✓ 已经启动，浏览器会自动打开")
+            self.log("  ✓ 已经启动（界面是原生窗口，不会开浏览器）")
         except Exception as e:
             self.log("  · 启动失败（手动双击桌面快捷方式也行）：%s" % e)
 
@@ -692,6 +811,41 @@ class Wizard(tk.Tk):
                   font=("Microsoft YaHei UI", 11, "bold"), padx=16, pady=6).pack(pady=(12, 0))
 
 
+def _set_lnk_icon(lnk_path, ico_path):
+    """给已建好的快捷方式补图标 —— 走 wscript（兼容性最好）✓
+
+    原来的 make_shortcut 只管目标/参数/工作目录，**不设图标** ✗
+    → 桌面上那个快捷方式会顶着 Python 的默认图标，很丑。
+    """
+    import subprocess as _sp
+    if not os.path.isfile(ico_path):
+        return False
+
+    def _q(s):                       # VBS 字符串：双引号要写成两个
+        return '"' + str(s).replace('"', '""') + '"'
+
+    vbs = os.path.join(os.environ.get("TEMP", "."), "_aiws_ico_%d.vbs" % int(time.time()))
+    body = (
+        'Set sh = CreateObject("WScript.Shell")\r\n'
+        'Set l = sh.CreateShortcut(%s)\r\n'
+        'l.IconLocation = %s\r\n'
+        'l.Save\r\n'
+    ) % (_q(lnk_path), _q(ico_path + ",0"))
+    try:
+        with open(vbs, "w", encoding="gbk", errors="replace") as f:
+            f.write(body)
+        _sp.run(["wscript.exe", "//B", vbs], timeout=30,
+                creationflags=0x08000000 if os.name == "nt" else 0)
+        return True
+    except Exception:
+        return False
+    finally:
+        try:
+            os.remove(vbs)
+        except OSError:
+            pass
+
+
 def _tk_ok():
     try:
         return tk.TkVersion > 0
@@ -701,6 +855,54 @@ def _tk_ok():
 
 def main():
     argv = sys.argv[1:]
+
+    # ★★ 便携版模式：**同一个 exe 入口**，靠文件名判断 ✓
+    #    主人要的：一个 exe 放桌面，双击**不安装、直接开** ✓
+    #    做法：装到固定目录 `%LOCALAPPDATA%\超级AI工作台`
+    #          · 已经装好 → 跳过安装，**秒开** ✓
+    #          · 还没装   → 静默装一次（无界面）✓
+    #    为什么复用「安装向导」这个入口：**它打包出来的 exe 实测能从桌面启动** ✓
+    _portable = (getattr(sys, "frozen", False)
+                 and "便携版" in os.path.basename(sys.executable or ""))
+    if _portable or "--auto" in argv:
+        home = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"),
+                            APP_NAME)
+        rt = os.path.join(home, "runtime")
+        _ok = (os.path.isfile(os.path.join(rt, "pythonw.exe"))
+               and os.path.isfile(os.path.join(home, "app.py"))
+               and os.path.isdir(os.path.join(rt, "Lib", "site-packages", "webview")))
+        if not _ok:
+            app = Wizard()
+            app.withdraw()
+            app.install_dir.set(home)
+            app.do_shortcut.set(True)      # 别忘开始菜单快捷方式（SAC 机器上也能用 ✓）
+            app.do_launch.set(False)
+
+            def _go():
+                if not app.installing:
+                    app.after(800, app.destroy)
+                else:
+                    app.after(1500, _go)
+
+            def _kick():
+                threading.Thread(target=app.do_install, daemon=True).start()
+                app.after(3000, _go)
+
+            app.after(200, _kick)
+            app.mainloop()
+        try:                               # 起原生窗口 ✓
+            _pyw = os.path.join(rt, "pythonw.exe")
+            _entry = os.path.join(home, "窗口.py")
+            if not os.path.isfile(_entry):
+                _entry = os.path.join(home, "app.py")
+            subprocess.Popen([_pyw, _entry], cwd=home,
+                             creationflags=0x00000008 | 0x08000000,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                             stdin=subprocess.DEVNULL)
+        except Exception:
+            pass
+        return 0
+
     if "--silent" in argv:
         i = argv.index("--silent")
         dst = argv[i + 1] if len(argv) > i + 1 else ""
@@ -715,9 +917,10 @@ def main():
         app.after(200, lambda: threading.Thread(target=app.do_install, daemon=True).start())
 
         def _watch():
-            # 装完了（自带运行时到位）就自己退出，不用等人点 ✓
-            if os.path.isfile(os.path.join(dst, "runtime", "pythonw.exe")):
-                app.after(2500, app.destroy)
+            # ★ 等**整个安装**跑完才退出
+            #   踩过：原来只看「运行时到位」就 destroy → 安装只做了一半就没了 ✗
+            if not app.installing:
+                app.after(1500, app.destroy)
             else:
                 app.after(1500, _watch)
 

@@ -199,6 +199,39 @@ GROUPS = [
 
 
 # --------------------------------------------------------------------------
+#  ★ 统一路径层：把上面写死的绝对路径改成走 paths.py
+#    安装版 → 落在「安装目录」下；开发机上老位置还在 → 原样不变 ✓
+# --------------------------------------------------------------------------
+import paths                                        # noqa: E402
+
+_REMAP = [
+    (r"C:\ComfyUI-models", paths.comfy_extra_models()),
+    (r"D:\ComfyUI\ComfyUI\models", paths.comfy_models()),
+    (r"D:\ComfyUI", paths.comfy()),
+    (r"D:\SeedVC", paths.seedvc()),
+    (r"D:\F5TTS", paths.f5tts()),
+    (r"C:\SeeThrough", paths.seethrough()),
+    (os.path.join(HOME, ".cache", "torch", "hub", "checkpoints"), paths.torch_hub()),
+    (os.path.join(HOME, "Documents", "抠图"), paths.matting_dir()),
+]
+
+
+def _remap_dests():
+    for g in GROUPS:
+        for it in g["items"]:
+            d = it.get("dest") or ""
+            if not d:
+                continue
+            for old, new in _REMAP:
+                if old and d.lower().startswith(old.lower()):
+                    it["dest"] = new + d[len(old):]
+                    break
+
+
+_remap_dests()
+
+
+# --------------------------------------------------------------------------
 #  ModelScope 官方文件表：路径 → (sha256, size, 下载地址)
 # --------------------------------------------------------------------------
 _ms_cache = {}
@@ -279,13 +312,35 @@ def _sha256(p):
 
 
 def multi_download(url, dst, size, threads=THREADS, on_tick=None):
-    """分块并发下载到 dst；返回 (ok, 说明)"""
+    """分块并发下载到 dst；**支持真·断点续传** ✓；返回 (ok, 说明)"""
     tmp = dst + ".part"
-    if os.path.isfile(tmp) and os.path.getsize(tmp) == size:
-        os.replace(tmp, dst)
-        return True, "已有完整临时文件"
+    side = tmp + ".json"          # ★ 记下"哪些块已经下好了" ✓ 断了能接着下 ✓
 
-    block = max(1 << 20, size // threads)
+    # ★★ 为什么要 sidecar ✗→✓（2026-10-03 主人虚拟机实测：13.5 GB 下了半小时，一块卡死就全废 ✗）
+    #   .part 是**预分配**大小的 ✗ → 字节数永远 == size ✗
+    #   光看大小会把"下到一半"当成"下完了" ✗；反过来一律重下 ✗ 又让半小时白费 ✗
+    #   所以用 sidecar 精确记已完成的分块 ✓ → 断线 / 失败 / 重启都能**接着下** ✓
+    state = {"url": url, "size": size, "done": []}
+    if os.path.isfile(tmp) and os.path.getsize(tmp) == size and os.path.isfile(side):
+        try:
+            with open(side, encoding="utf-8") as f:
+                old = json.load(f)
+            if old.get("url") == url and old.get("size") == size:
+                state["done"] = [int(x) for x in (old.get("done") or [])]
+        except Exception:
+            state["done"] = []
+    if not state["done"]:          # 没得续 → 从头来（把半截的也清掉 ✓）
+        for _p in (tmp, side):
+            try:
+                os.remove(_p)
+            except OSError:
+                pass
+
+    # ★★ 块大小：**固定 8 MB** ✓（原来 size//threads ✗）
+    #   踩过：千问一个文件 6.9 GB ÷ 16 ≈ **431 MB 一块** ✗ → on_tick 只在整块下完才报 ✗
+    #   → 进度条几分钟不动、看着像卡死 ✗；固定 8 MB 之后几秒一动 ✓
+    block = 8 << 20
+
     ranges = []
     a = 0
     while a < size:
@@ -297,12 +352,38 @@ def multi_download(url, dst, size, threads=THREADS, on_tick=None):
     got = [0]
     lock = threading.Lock()
     err = []
+    last_save = [0.0]
+
+    # 把 sidecar 里记着的块标成"已完成" ✓ → 少下这几块 ✓
+    for _i in state["done"]:
+        if 0 <= _i < len(ranges):
+            done[_i] = ranges[_i][1] - ranges[_i][0] + 1
+    got[0] = sum(done)
 
     try:
-        with open(tmp, "wb") as f:
-            f.truncate(size)
+        if not os.path.isfile(tmp) or os.path.getsize(tmp) != size:
+            with open(tmp, "wb") as f:
+                f.truncate(size)       # 预分配（断点续传要按偏移写 ✓）
     except OSError as e:
         return False, "建不了临时文件：%s" % e
+
+    if got[0] and on_tick:
+        on_tick(got[0], size)          # 立刻显示"已经下了多少" ✓
+
+    def _save(force=False):
+        """把已完成的分块写进 sidecar ✓（节流：最多 2 秒写一次 ✓）"""
+        import time as _t
+        now = _t.time()
+        with lock:
+            if not force and (now - last_save[0]) < 2.0:
+                return
+            last_save[0] = now
+            idxs = [i for i in range(len(ranges)) if done[i]]
+        try:
+            with open(side, "w", encoding="utf-8") as f:
+                json.dump({"url": url, "size": size, "done": idxs}, f)
+        except Exception:
+            pass
 
     def one(idx, a, b):
         try:
@@ -320,6 +401,7 @@ def multi_download(url, dst, size, threads=THREADS, on_tick=None):
                 got[0] += want
                 if on_tick:
                     on_tick(got[0], size)
+            _save()                    # ★ 每下完一块就记一笔 ✓（节流 ✓）
         except Exception as e:
             with lock:
                 err.append("%s" % e)
@@ -328,7 +410,7 @@ def multi_download(url, dst, size, threads=THREADS, on_tick=None):
         todo = [i for i in range(len(ranges)) if not done[i]]
         if not todo or err:
             break
-        batch = todo[:threads * 3]
+        batch = todo[:threads]        # ★ 原来 threads*3 = 48 路 ✗ 会被服务器限速/掐断 → 改成 threads 路 ✓
         ts = []
         for i in batch:
             t = threading.Thread(target=one, args=(i, ranges[i][0], ranges[i][1]))
@@ -336,17 +418,29 @@ def multi_download(url, dst, size, threads=THREADS, on_tick=None):
             t.start()
             ts.append(t)
         for t in ts:
-            t.join(timeout=1800)
+            # ★ 单块最多等 5 分钟（原来 1800 秒 = **半小时** ✗）
+            #   踩过（主人 2026-10-03 虚拟机）：一块卡住就白等半小时，然后整任务判失败 ✗
+            #   现在块只有 8 MB ✓ 5 分钟绰绰有余 ✓ 卡了 5 分钟就认栽 ✓
+            #   而且失败也没关系 —— 已完成的分块记在 sidecar 里 ✓ 重试会**接着下** ✓
+            t.join(timeout=300)
         if err:
             break
         if not any(done[i] for i in batch):
             err.append("这一批一块都没下成")
 
+    _save(force=True)                  # ★ 失败也要把进度存下来 ✓
     if err:
-        return False, "下载出错：%s" % err[0]
+        done_mb = human(sum(done))
+        return False, ("下载出错：%s（已下 %s / %s —— **重试会接着下** ✓ 不会白费 ✓）"
+                       % (err[0], done_mb, human(size)))
     if sum(done) != size:
-        return False, "只下到 %s / %s" % (human(sum(done)), human(size))
+        return False, "只下到 %s / %s（重试会接着下 ✓）" % (human(sum(done)), human(size))
     os.replace(tmp, dst)
+    for _p in (side, tmp + ".ok"):     # 交出去了就撤掉 sidecar ✓
+        try:
+            os.remove(_p)
+        except OSError:
+            pass
     return True, "下完了 %s" % human(size)
 
 

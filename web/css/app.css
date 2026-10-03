@@ -736,3 +736,302 @@ ol.steps li b{color:var(--b1)}
   opacity: .45;
   flex: 0 0 auto;
 }
+
+/* =====================================================================
+   ★ 自绘标题栏（2026-10-03 主人要 PCL 那种 ✓）
+   窗口 frameless ✓ → 这整条就是"标题栏" ✓ 拖它 = 拖窗口 ✓（靠 pywebview-drag-region）
+   ===================================================================== */
+.titlebar{
+  height:42px; display:flex; align-items:stretch;
+  padding-left:14px; user-select:none;
+  background:linear-gradient(90deg,#1a67c8 0%,#2f7ddb 55%,#3f8ee6 100%);
+  color:#fff; box-shadow:0 2px 12px rgba(26,80,150,.28);
+  position:sticky; top:0; z-index:90;
+}
+.tbDrag{flex:1 1 auto; display:flex; align-items:center; gap:10px; min-width:0}
+.tbIcon{width:19px; height:19px; border-radius:5px; flex:0 0 auto}
+.tbName{font-weight:800; font-size:14.5px; letter-spacing:.3px; white-space:nowrap}
+.tbVer{font-size:12px; font-weight:700; opacity:.75}
+.tbBtns{display:flex; align-items:stretch; flex:0 0 auto}
+.tbBtn{
+  width:46px; border:0; background:transparent; color:#fff;
+  font-family:inherit; font-size:14px; line-height:1; cursor:pointer;
+  transition:background .15s;
+}
+.tbBtn:hover{background:rgba(255,255,255,.20)}
+.tbClose:hover{background:#e5484d}
+/* 无边框窗口没有系统边框 → 给整页留一点点内边距，看着不贴边 ✓ */
+body{padding:0}
+
+/* =====================================================================
+   ★ 滚动条（2026-10-03 主人两轮反馈后定稿）
+   第一轮：把它做细做圆 ✗ —— 主人说"依旧在窗口外面" ✓（它顶在窗口最右边 ✓）
+   实话 ✗：Chromium 的滚动条**没法真正浮在内容之上** ✓
+          （它固定占住右边一条 ✓ 老的 overflow:overlay 早被删了 ✓）
+   定稿 ✓：**让它彻底不出现** ✓ —— 画面干净 ✓
+          滚轮 / 触控板 / 空格 / 方向键**照样能滚** ✓（只是不画那根条 ✓）
+   想要指示条时随时说一声 ✓ 我再换别的办法 ✓
+   ===================================================================== */
+::-webkit-scrollbar{width:0; height:0; display:none}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:transparent; border:0}
+::-webkit-scrollbar-corner{background:transparent}
+::-webkit-scrollbar-button{display:none; width:0; height:0}
+
+/* ★ 开场提示开着的时候，**页面本身不许滚** ✓（2026-10-03 主人："不要随鼠标滚轮转而移动" ✓）
+   第一道修的是 body 的 transform（那个才是根因 ✓）
+   这一道是双保险 ✓：只要 .intro-layer 还在 DOM 里，整页就不滚 ✓
+   （:has() 在 Chromium 105+ 都支持 ✓ WebView2 是常青版 ✓）
+   ★ 前提：提示关掉时 JS 要把 .intro-layer 从 DOM 里去掉 ✓ 否则页面会一直锁着 ✓ */
+html:has(.intro-layer){ overflow:hidden }
+/* Firefox 那边也照顾一下（万一用浏览器打开 ✓） */
+html{scrollbar-width:none}
+body{scrollbar-width:none; -ms-overflow-style:none}
+
+/* =====================================================================
+   ★ 开窗弹簧动画（2026-10-03 主人要"像弹簧一样从中间弹出"、"最小值 10%" ✓）
+   为什么改这里做 ✗→✓：
+     上一版是**改窗口尺寸** ✗ → Chromium 每帧都要重排版整页 ✓ → **很卡** ✓
+     现在改成**只动页面内容** ✓：
+       transform:scale 是 **GPU 合成** ✓ 完全不重排版 ✓ 丝滑 ✓
+       而且能真的做到 **10%**（窗口尺寸做不到那么小 ✗）
+   曲线：10% → 过冲 105% → 回落 98% → 稳住 100%（弹性 ✓）
+   ===================================================================== */
+/* ★★ 弹簧动画改成"**加 class 才跑**"（2026-10-03 主人："窗口弹簧效果怎么没了" ✗）
+   原来把它挂在 body 上自动跑 ✗ → 页面加载时窗口**可能还没显示** ✓
+   → 0.52 秒的动画在"看不见"的时候就跑完了 ✓ 主人当然看不到 ✓
+   而且挂在 body 上还有个副作用 ✗：动画期间 body 有 transform ✓
+   → 里面 position:fixed 的元素会退化成相对定位 ✓（开场提示跟着滚就是这么来的 ✓）
+   现在 ✓：
+     · 动画**不在 body 上** ✓ body 静止时一点 transform 都没有 ✓ 那个隐患彻底没了 ✓
+     · 由 JS 在"pywebview 就绪 + 延迟一下"之后加 .pop-now 触发 ✓ 保证看得见 ✓
+   ===================================================================== */
+@keyframes aiwsPop{
+  0%   { transform:scale(.10); opacity:.15 }
+  45%  { transform:scale(1.05); opacity:1   }
+  65%  { transform:scale(.985)              }
+  82%  { transform:scale(1.015)             }
+  100% { transform:scale(1);   opacity:1    }
+}
+.pop-now{
+  animation:aiwsPop .52s cubic-bezier(.22,1.1,.36,1);
+  transform-origin:50% 50%;        /* ★ 从**正中间**长出来 ✓ */
+}
+
+/* ★ 自绘滚动条（浮在内容上 ✓ 不占位 ✓ —— 2026-10-03 主人要的"做到里面去" ✓）
+   系统那根固定占右边一条 ✗ 怎么做都在窗口最外 ✓ → 不用它 ✓ 用这个 ✓ */
+.ovsb{
+  /* ★ 2026-10-03 主人反馈：滑块会跑到标题栏上 ✗ + 不要自动隐藏 ✓
+     标题栏高 42px → 轨道从 46px 开始 ✓ 稳稳在内容区里 ✓ */
+  position:fixed; top:46px; right:4px; width:7px;
+  height:calc(100vh - 52px);
+  border-radius:99px; z-index:999; pointer-events:auto;
+  opacity:1;                       /* ★ 常显 ✓ 不淡出 ✓ */
+  transition:opacity .2s;
+}
+.ovsbThumb{
+  width:100%; min-height:38px; border-radius:99px;
+  background:rgba(78,120,172,.55);
+  transition:background .15s;
+  cursor:grab;
+}
+.ovsbThumb:hover{background:rgba(48,96,152,.85)}
+.ovsbThumb:active{cursor:grabbing; background:rgba(36,84,140,.95)}
+
+/* =====================================================================
+   ★ 自绘弹窗（2026-10-03 主人："把所有类似的通知转变为弹窗" ✓）
+   浏览器原生的 alert/confirm/prompt 会顶着「127.0.0.1:8200 显示」✗ 又丑又割裂 ✓
+   换成这套：应用自己的卡片式弹窗 ✓ 跟界面一个风格 ✓
+   （window.alert 已被 JS 直接接管 ✓ confirm/prompt 见各调用处的 await AIWS.ask ✓）
+   ===================================================================== */
+.mdl-layer{
+  position:fixed; inset:0; z-index:100000;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(18,44,74,.34);
+  opacity:0; pointer-events:none; transition:opacity .18s;
+}
+.mdl-layer.on{opacity:1; pointer-events:auto}
+.mdl-card{
+  min-width:340px; max-width:min(560px,86vw);
+  background:#fff; border:1px solid #cfe3f7; border-radius:16px;
+  box-shadow:0 24px 60px rgba(16,50,90,.34);
+  padding:22px 24px 18px;
+  transform:scale(.94) translateY(8px);
+  transition:transform .2s cubic-bezier(.2,1.2,.3,1);
+  display:flex; flex-direction:column; gap:12px;
+}
+.mdl-layer.on .mdl-card{transform:none}
+.mdl-ico{font-size:26px; line-height:1; text-align:center;
+         display:flex; align-items:center; justify-content:center; min-height:44px}
+/* ★ 弹窗上的图标 = 软件自己的图标（2026-10-03 主人："问号换成软件图标" ✓） */
+.mdl-logo{width:44px; height:44px; border-radius:12px;
+          box-shadow:0 4px 12px rgba(30,90,160,.22)}
+.mdl-emoji{font-size:26px; line-height:1}
+.mdl-msg{
+  color:#22405e; font-size:14.5px; line-height:1.75;
+  white-space:pre-wrap; word-break:break-word; max-height:52vh; overflow:auto;
+}
+.mdl-inp{
+  border:1px solid #cfe3f7; border-radius:10px; padding:9px 12px;
+  font-family:inherit; font-size:14px; color:#22405e; outline:none;
+}
+.mdl-inp:focus{border-color:#2f7ddb; box-shadow:0 0 0 3px rgba(47,125,219,.16)}
+.mdl-btns{display:flex; gap:10px; justify-content:flex-end; margin-top:4px}
+.mdl-btn{
+  min-width:88px; padding:9px 16px; border:0; border-radius:10px;
+  font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
+  transition:transform .12s, box-shadow .12s, background .15s;
+}
+.mdl-btn:active{transform:translateY(1px)}
+.mdl-ok{background:linear-gradient(135deg,#2f7ddb,#1e63b8); color:#fff;
+        box-shadow:0 6px 16px rgba(47,125,219,.34)}
+.mdl-ok:hover{box-shadow:0 9px 22px rgba(47,125,219,.46)}
+.mdl-no{background:#eef4fb; color:#4a6b8a; border:1px solid #d8e6f6}
+.mdl-no:hover{background:#e3eefb}
+.mdl-card.danger .mdl-ok{background:linear-gradient(135deg,#e5484d,#c53338);
+                         box-shadow:0 6px 16px rgba(200,50,55,.34)}
+
+/* =====================================================================
+   ★ 左侧导航（2026-10-03 主人要求）
+   原来标签页在顶部、分两行居中 ✗ → 改成**左边竖排**、按用途分四类 ✓
+   （🖼 图片 / 🎬 视频 / 🎵 音频 / 🧰 工作）
+   按钮的 class 仍是 .tab、属性仍是 data-tab ✓
+   → 所以 app.js 的切页逻辑**一行都不用动** ✓
+   ===================================================================== */
+.shell{
+  max-width:1500px; margin:0 auto; padding:0 12px;
+  display:flex; gap:18px; align-items:flex-start;
+}
+.side{
+  flex:0 0 212px; width:212px;
+  position:sticky; top:12px;                 /* 往下滚时导航跟着 ✓ */
+  display:flex; flex-direction:column; gap:2px;
+  max-height:calc(100vh - 24px); overflow-y:auto;
+  padding:10px 9px; border-radius:18px;
+  background:linear-gradient(180deg,#ffffff,#f3f9ff);
+  border:1.5px solid var(--line); box-shadow:var(--shadow);
+}
+.sideGrp{display:flex; flex-direction:column; gap:2px}
+.sideGrp + .sideGrp{margin-top:9px}
+/* ★ 「设置」单独钉在侧栏最下面（2026-10-03 主人要求：从分类里移出来 ✓） */
+.sideGrpFoot{margin-top:auto; padding-top:8px; border-top:1px solid var(--line)}
+.sideTitle{
+  display:flex; align-items:center; gap:7px;
+  padding:5px 10px 6px; font-size:12.5px; font-weight:800;
+  letter-spacing:.6px; color:var(--b1); opacity:.9;
+}
+.sideTitle i{font-style:normal; font-size:13px}
+/* ★ 分类可以折叠（2026-10-03 主人要求：做个小箭头能把分类隐藏起来 ✓） */
+.sideTitle{cursor:pointer; user-select:none; border-radius:10px; transition:background .15s}
+.sideTitle:hover{background:#eaf5ff}
+.sideArrow{
+  margin-left:auto; font-style:normal; font-size:11px; font-weight:900;
+  opacity:.55; transition:transform .2s;
+}
+.sideGrp.collapsed .sideArrow{transform:rotate(-90deg)}   /* 箭头转成朝右 ✓ */
+.sideGrp.collapsed .tab{display:none}                     /* 收起这一类的页签 ✓ */
+/* 收起时给个提示（鼠标悬停看 title ✓），并把分类名压暗一点 */
+.sideGrp.collapsed .sideTitle{opacity:.62}
+/* 竖排按钮：整行可点、左对齐 ✓ */
+.side .tab{
+  display:flex; width:100%; justify-content:flex-start;
+  text-align:left; gap:8px; padding:8px 11px; border-radius:11px;
+  font-size:14px; line-height:1.3;
+}
+.side .tab span{white-space:normal}
+.side .tab.active{color:#fff}
+/* 右侧内容占满剩余宽度 ✓（main 原来是 max-width:1500px 居中 ✗） */
+.shell > main{flex:1 1 auto; min-width:0; max-width:none; margin:0}
+/* 窄屏（窗口拖小 / 竖屏）→ 导航折到上面横排 ✓ */
+@media (max-width:980px){
+  .shell{flex-direction:column; gap:12px}
+  .side{
+    position:static; width:100%; flex:0 0 auto; max-height:none;
+    flex-direction:row; flex-wrap:wrap; gap:6px;
+  }
+  .sideGrp{flex-direction:row; flex-wrap:wrap; align-items:center; gap:4px}
+  .sideGrp + .sideGrp{margin-top:0}
+  .side .tab{width:auto}
+}
+
+/* =====================================================================
+   ★★ 毛玻璃 + 流光文字（2026-10-03 主人要求）
+   参数全部由 web/js/ui-theme.js 写在 :root 上 ✓ 设置页里可调 ✓
+   流光三要素（裁字 + 200% 背景 + 流动关键帧）**抄自小肥鱼插件**
+   `dsh-whale-widget` 的 FISH_GRAD_LIB / @keyframes dshwvRainbow ✓
+   ===================================================================== */
+:root{
+  --g-blur:14px; --g-alpha:.55; --g-tint:255,255,255; --g-sat:1.35;
+  --g-grad:none; --g-speed:2.6s;
+}
+/* 毛玻璃要有东西可"糊"才行 ✗ → 开玻璃时铺一层柔和渐变当底 ✓
+   ★ 但如果**原生窗口**那边的系统亚克力挂上了（html.acrylic-ok ✓）
+     就把背景让出来 → **透出桌面** ✓（这才是主人要的那种毛玻璃 ✓）
+     挂不上就保持渐变底 ✓ 绝不会变成一片黑 ✗ */
+body.glass-on{
+  background:linear-gradient(160deg,#e8f2ff 0%,#f7f1ff 42%,#e9fbf4 100%) fixed !important;
+}
+html.acrylic-ok,
+html.acrylic-ok body,
+html.acrylic-ok body.glass-on{
+  background:transparent !important;
+  background-color:transparent !important;
+}
+body.glass-on .card,
+body.glass-on .side,
+body.glass-on .hero,
+body.glass-on .mdRow,
+body.glass-on .tips-box,
+body.glass-on .uiBox{
+  background:rgba(var(--g-tint),var(--g-alpha)) !important;
+  -webkit-backdrop-filter:blur(var(--g-blur)) saturate(var(--g-sat));
+  backdrop-filter:blur(var(--g-blur)) saturate(var(--g-sat));
+  border-color:rgba(255,255,255,.62) !important;
+  box-shadow:0 10px 34px rgba(40,80,140,.15) !important;
+}
+/* ★ 流光文字 —— 关键帧同插件：0% → 200%（配合 background-size:200% 正好无缝循环 ✓） */
+@keyframes aiwsShine{0%{background-position:0% 0}100%{background-position:200% 0}}
+body.shine-on.shine-tabs .side .tab i,
+body.shine-on.shine-tabs .side .tab span,
+body.shine-on.shine-title #siteTitle,
+body.shine-on.shine-title #siteTitle .sub,
+body.shine-on.shine-title .slogan{
+  background-image:var(--g-grad);
+  background-size:200% auto;
+  background-repeat:repeat;
+  -webkit-background-clip:text; background-clip:text;
+  color:transparent !important;
+  -webkit-text-fill-color:transparent !important;
+  animation:aiwsShine var(--g-speed) linear infinite;
+}
+/* ★ 选中/悬停不能把流光压成纯色 ✗（插件 README 里也踩过这个坑 ✓）
+   ★★ 2026-10-03 修 bug：这两条原来挂在 `shine-on` 上 ✗
+      只要选了流光方案（哪怕**只给标题**用 ✓）它就生效 ✗
+      → 把选中标签的文字设成透明、又没铺流光 → **变成一块空白** ✗
+      必须挂到 `shine-tabs`（真给选项卡上流光时才有的类 ✓）才对 ✓ */
+body.shine-on.shine-tabs .side .tab.active span,
+body.shine-on.shine-tabs .side .tab.active i,
+body.shine-on.shine-tabs .side .tab:hover span,
+body.shine-on.shine-tabs .side .tab:hover i{
+  color:transparent !important; -webkit-text-fill-color:transparent !important;
+}
+body.shine-on.shine-tabs .side .tab.active{
+  background:rgba(255,255,255,.45) !important;
+  box-shadow:0 4px 14px rgba(45,120,200,.18) !important;
+}
+/* ---- 「🎨 界面外观」设置面板自己的样式 ---- */
+.uiBox{padding:2px 0}
+.uiSecTitle{font-weight:800;color:var(--b1);font-size:14.5px;margin:2px 0 8px}
+.uiSec{display:flex;flex-direction:column;gap:9px}
+.uiRow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.uiLbl{flex:0 0 132px;font-size:13.5px;font-weight:700;color:var(--ink2)}
+.uiTip{display:block;font-weight:400;font-size:12px;opacity:.6;margin-top:2px}
+.uiSlider{display:flex;align-items:center;gap:9px;flex:1 1 210px;min-width:170px}
+.uiSlider input[type=range]{flex:1 1 auto;min-width:110px}
+.uiVal{flex:0 0 54px;text-align:right;font-size:12.5px;font-weight:700;color:var(--b1)}
+.uiChk{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:700;color:var(--ink2);cursor:pointer}
+.uiColor{width:46px;height:28px;padding:0;border:1px solid var(--line);border-radius:8px;background:none;cursor:pointer}
+.uiSel{padding:6px 10px;border-radius:10px;border:1.5px solid var(--line);font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink2);background:#fff}
+.uiHint{font-size:12.5px;opacity:.6}
+
+

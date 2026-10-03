@@ -261,11 +261,12 @@ def generate_worker(jid, cfg, req):
 def _probe_media(path):
     """用 ffprobe/ffmpeg 读时长与分辨率（没有就跳过）"""
     import subprocess
-    cands = [
-        r"D:\ComfyUI\python_embeded\Lib\site-packages\imageio_ffmpeg\binaries"
-        r"\ffmpeg-win-x86_64-v7.1.exe",
-        "ffmpeg",
-    ]
+    import glob as _glob
+    import paths as _paths
+    _bin = os.path.join(_paths.comfy(), "python_embeded", "Lib", "site-packages",
+                        "imageio_ffmpeg", "binaries")
+    _hits = sorted(_glob.glob(os.path.join(_bin, "ffmpeg*.exe")))
+    cands = (_hits or [os.path.join(_bin, "ffmpeg.exe")]) + ["ffmpeg"]
     for exe in cands:
         if exe != "ffmpeg" and not os.path.isfile(exe):
             continue

@@ -9,6 +9,25 @@
 </head>
 <body>
 
+<!-- ===================== 自绘标题栏（PCL 那种）===================== -->
+<!-- ★ 2026-10-03 主人要求：把标题栏做成 PCL 那样 ✓
+     窗口是无边框的（frameless ✓）→ 系统那三个按钮没了 ✓ 这里自己画、自己接 ✓
+     拖拽：pywebview 认 `pywebview-drag-region` 这个 class ✓
+     所以**只把非按钮部分**标成拖拽区 ✓（按钮要是也在拖拽区里，点它会被当成拖窗口 ✗）
+     安全网：Alt+F4 对无边框窗口一样有效 ✓ -->
+<div class="titlebar" id="titlebar">
+  <div class="tbDrag pywebview-drag-region">
+    <img class="tbIcon" src="/static/favicon.ico" alt="">
+    <span class="tbName">超级AI工作台</span>
+    <span class="tbVer">v1.4</span>
+  </div>
+  <div class="tbBtns">
+    <button class="tbBtn" id="tbMin" title="最小化">─</button>
+    <button class="tbBtn" id="tbMax" title="最大化 / 还原">▢</button>
+    <button class="tbBtn tbClose" id="tbClose" title="关闭">✕</button>
+  </div>
+</div>
+
 <!-- ===================== 顶部 Hero ===================== -->
 <header class="hero">
   <div class="hero-art" aria-hidden="true"><img src="/static/assets/hero.webp" alt=""></div>
@@ -21,6 +40,13 @@
       <p class="slogan slogan2" id="siteSlogan2">与你相遇，便是奇迹</p>
       <p class="byline" id="siteAuthor">Made by @奇迹与你</p>
       <p class="contact" id="siteContact">有问题加Q:3153180025</p>
+      <!-- ★ 2026-10-03 主人要求：标题区明确写「下载模型去设置页」✓ 而且能点着跳过去 ✓ -->
+      <p id="heroDlHint"
+         title="点一下直接跳到「⚙️ 设置」页的 📦 本地模型"
+         style="margin:11px 0 0;font-size:14px;font-weight:700;color:#ffe08a;cursor:pointer;text-shadow:0 0 10px rgba(255,200,60,.45)">
+        ★ 下载模型 / 引擎 → 请到「⚙️ 设置」页
+        <span style="font-weight:600;color:#fff3c4">（点这里直接过去 ✓）</span>
+      </p>
     </div>
     <div class="heroRight">
       <div class="hero-status">
@@ -35,27 +61,48 @@
   </div>
 </header>
 
-<!-- ===================== 标签页导航 ===================== -->
-<nav class="tabs" id="tabs">
-  <div class="tabRow">
-    <button class="tab active" data-tab="dsh"><i>⚡</i><span>高速工作流</span></button>
-    <button class="tab" data-tab="search"><i>🔍</i><span>AI 搜索引擎</span></button>
+<!-- ===================== 左侧导航（按用途分类）===================== -->
+<!-- ★ 2026-10-03 主人要求：所有标签页从顶部挪到**左边** ✓ 并按用途分四类 ✓
+     图片 / 视频 / 音频 / 工作
+     class 和 data-tab 完全照旧 ✓ 所以 app.js 的切页逻辑一行都不用改 ✓ -->
+<div class="shell">
+<nav class="side" id="tabs">
+
+  <div class="sideGrp">
+    <div class="sideTitle"><i>🖼</i><span>图片</span></div>
     <button class="tab" data-tab="doubao"><i>🎨</i><span>豆包 Seedream 生图</span></button>
     <button class="tab" data-tab="qwen"><i>🐋</i><span>本地千问生图</span></button>
+    <button class="tab" data-tab="matting"><i>✂️</i><span>AI 抠图</span></button>
+    <button class="tab" data-tab="blend"><i>🖼️</i><span>AI 溶图</span></button>
+  </div>
+
+  <div class="sideGrp">
+    <div class="sideTitle"><i>🎬</i><span>视频</span></div>
     <button class="tab" data-tab="vgen"><i>🎬</i><span>AI 生视频</span></button>
     <button class="tab" data-tab="live2d"><i>🎭</i><span>Live2D 制作</span></button>
-    <button class="tab" data-tab="matting"><i>✂️</i><span>AI 抠图</span></button>
-    <button class="tab" data-tab="blend"><i>🎨</i><span>AI 溶图</span></button>
   </div>
-  <div class="tabRow">
+
+  <div class="sideGrp">
+    <div class="sideTitle"><i>🎵</i><span>音频</span></div>
     <button class="tab" data-tab="music"><i>🎵</i><span>AI 音乐工坊</span></button>
     <button class="tab" data-tab="stem"><i>🎚️</i><span>AI 人声分离</span></button>
     <button class="tab" data-tab="cover"><i>🎤</i><span>AI 翻唱</span></button>
     <button class="tab" data-tab="tts"><i>📖</i><span>声音包朗读</span></button>
+  </div>
+
+  <div class="sideGrp">
+    <div class="sideTitle"><i>🧰</i><span>工作</span></div>
+    <button class="tab active" data-tab="dsh"><i>⚡</i><span>高速工作流</span></button>
+    <button class="tab" data-tab="search"><i>🔍</i><span>AI 搜索引擎</span></button>
     <button class="tab" data-tab="toolbox"><i>🧰</i><span>电脑工具百宝箱</span></button>
     <button class="tab" data-tab="gallery"><i>🖼️</i><span>作品库</span></button>
+  </div>
+
+  <!-- ★ 2026-10-03 主人要求：**设置从分类里移出来** ✓ 单独钉在最下面 ✓ -->
+  <div class="sideGrp sideGrpFoot">
     <button class="tab" data-tab="settings"><i>⚙️</i><span>设置</span></button>
   </div>
+
   <span class="tab-ink" id="tabInk"></span>
 </nav>
 
@@ -516,7 +563,10 @@
         <div class="card" id="qInstallCard">
           <h2>安装 / 模型</h2>
           <div id="qNeedBox"></div>
-          <button class="primary" id="qInstallBtn" style="margin-top:12px">⬇ 一键下载并安装</button>
+          <button class="primary" id="qInstallBtn" style="margin-top:12px">⬇ 去「⚙️ 设置」页下载模型</button>
+          <div class="hint" style="margin-top:6px">
+            ★ 模型 / 引擎的下载统一在「⚙️ 设置」页 → 本地模型 —— 这里点一下就会带你过去 ✓
+          </div>
           <div class="progress" id="qInstallProg" style="display:none">
             <div class="bar"><span id="qInstallBar"></span></div>
             <div class="progText" id="qInstallText">准备中…</div>
@@ -879,7 +929,7 @@
         <!-- ============ 工具 1：校园网一键登录 ============ -->
         <div class="card">
           <h2>🔓 校园网一键登录
-            <span class="hint">校园网 · 深澜 Srun 认证</span></h2>
+            <span class="hint">深澜 Srun 认证</span></h2>
 
           <div class="kvBox">
             <div class="kv"><span>本机 IP</span><b id="cpIp">—</b></div>
@@ -1902,6 +1952,8 @@
   </section>
 
 </main>
+</div>
+<!-- ★ .shell 结束（左侧导航 + 右侧内容 的横向容器 ✓） -->
 
 <!-- ===================== 首次提示层 ===================== -->
 <div class="tips-layer" id="tipsLayer" hidden>
@@ -1918,6 +1970,8 @@
   </div>
 </div>
 
+<!-- ★ 自绘弹窗要**最先加载** ✓ 这样 window.alert 从第一行脚本起就被接管了 ✓ -->
+<script src="/static/js/ui-modal.js"></script>
 <script src="/static/js/models.js"></script>
 <script src="/static/js/prompt_lib.js"></script>
 <script src="/static/js/style.js"></script>
@@ -1936,5 +1990,7 @@
 <script src="/static/js/tab-matting.js"></script>
 <script src="/static/js/tab-blend.js"></script>
 <script src="/static/js/intro.js"></script>
+<!-- ★ 界面主题（毛玻璃 + 流光文字 + 设置面板）—— 放最后 ✓ 等前面的都就位再接管 ✓ -->
+<script src="/static/js/ui-theme.js"></script>
 </body>
 </html>

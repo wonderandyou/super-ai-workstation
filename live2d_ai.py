@@ -37,9 +37,10 @@ INPUT_DIR = os.path.join(MAT_DIR, "_输入")
 IMG_EXT = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
 MAX_MB = 40
 
-VENV_PY = r"C:\SeeThrough\venv\Scripts\python.exe"
+import paths as _paths          # ★ 统一路径层
+VENV_PY = _paths.seethrough_py()
 LOCAL_RUNNER = os.path.join(LIVE2D_DIR, "seethrough_local.py")
-LOCAL_MODELS = r"C:\SeeThrough\models"
+LOCAL_MODELS = _paths.seethrough_models()
 PSD2LIVE_EXE = os.environ.get(
     "PSD2LIVE_EXE", r"D:\AI工作站\downloads\PSD2Live-1.6.0\PSD2Live\PSD2Live.exe")
 PSD2LIVE_PORT = 23871

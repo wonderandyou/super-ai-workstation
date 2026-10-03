@@ -102,7 +102,7 @@
         <p>页面里有一张<b>完整对比表</b>，可以直接给老师看。</p>
         <p><b>怎么用（三步）：</b></p>
         <ol>
-          <li>第一次用：点右边 <b>「⬇ 一键下载并安装」</b>（约 15 GB，支持断点续传，中途关掉也没事）</li>
+          <li>第一次用：去 <b>「⚙️ 设置」页 → 本地模型</b> 点下载（约 15 GB，支持断点续传，中途关掉也没事）★ 下载入口只在这里 ✓</li>
           <li>点<b>右上角「⏻ 启动后端」</b>（首次加载模型要 1~3 分钟，之后就快了）</li>
           <li>写描述 → 选比例 → <b>开始生成</b>（1024×1024 约 1 分钟一张）</li>
         </ol>
@@ -130,7 +130,7 @@
       tipsTitle: '电脑工具百宝箱',
       tipsBody: `
         <p>三个常用小工具，都是本机跑、不联网：</p>
-        <p><b>🔓 校园网一键登录</b> —— 校园网的<b>深澜 Srun 认证</b>。
+        <p><b>🔓 校园网一键登录</b> —— <b>深澜 Srun 认证</b>。
            点一下自动完成「拿挑战码 → 加密账号密码 → 提交认证」。
            第一次用点「账号设置」填学号密码 + 选认证方式（电信 / 移动 / 教师），
            填完可以开<b>开机自启</b>，以后开机自动登录、断网自动重连。</p>
@@ -423,8 +423,8 @@
       var sb = document.getElementById('msStop');
       if (sb && !sb.dataset.wired) {
         sb.dataset.wired = '1';
-        sb.onclick = function () {
-          if (!confirm('停止音乐工坊？\n\n界面会断开，内存会被释放。下次打开这一页会重新启动。')) return;
+        sb.onclick = async function () {
+          if (await AIWS.no('停止音乐工坊？\n\n界面会断开，内存会被释放。下次打开这一页会重新启动。')) return;
           sb.disabled = true;
           fetch('/api/music/stop', { method: 'POST',
             headers: { 'Content-Type': 'application/json' }, body: '{}' })
@@ -449,7 +449,7 @@
           f.src = 'http://127.0.0.1:' + (s.port || 7870);
           f.setAttribute('data-loaded', '1');
         }
-      }).catch(function () {
+      }).catch(async function () {
         if (pill) { pill.textContent = '● 启动中…'; }
       });
     },
@@ -620,6 +620,35 @@
       document.querySelectorAll('.tab').forEach(function (b) {
         b.addEventListener('click', function () { AIWS.activate(b.dataset.tab); });
       });
+      // ★ 标题区那行「下载模型去设置页」也能点着跳过去 ✓
+      const _hd = document.getElementById('heroDlHint');
+      if (_hd) _hd.addEventListener('click', function () { AIWS.activate('settings'); });
+
+      // ★★ 左侧导航的分类可以**折叠**（2026-10-03 主人要求：做个小箭头能把分类隐藏 ✓）
+      //   箭头是这里动态加上去的 ✓ 所以 index.html 不用改 ✓
+      //   折叠状态记在 localStorage ✓ 下次打开还是收着的 ✓
+      document.querySelectorAll('.sideGrp').forEach(function (gp, gi) {
+        const t = gp.querySelector('.sideTitle');
+        if (!t || t.dataset.fold === '1') return;
+        t.dataset.fold = '1';
+        const arrow = document.createElement('i');
+        arrow.className = 'sideArrow';
+        arrow.textContent = '▾';
+        t.appendChild(arrow);
+        const key = 'aiws.fold.' + gi;
+        if (localStorage.getItem(key) === '1') gp.classList.add('collapsed');
+        const toggle = async function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          gp.classList.toggle('collapsed');
+          const on = gp.classList.contains('collapsed');
+          localStorage.setItem(key, on ? '1' : '0');
+          t.title = on ? '点一下展开这一类' : '点一下收起这一类';
+        };
+        arrow.addEventListener('click', toggle);
+        t.addEventListener('click', toggle);
+        t.title = '点一下收起这一类';
+      });
       const hash = (location.hash || '').replace('#', '');
       AIWS.activate(TABS[hash] ? hash : 'doubao');
     },
@@ -775,13 +804,14 @@
 
     // ---------------- 本地模型（一键下载 + 官方哈希校验）----------------
     mdJob: '',
+    mdJobs: {},          // ★ 每个组一个任务：{ jid: {group, jid} } —— 可同时下多个 ✓
 
     async loadModels() {
       const box = document.getElementById('mdList');
       const st = document.getElementById('mdStatus');
       if (!box) return;
       const rf = document.getElementById('mdRefresh');
-      if (rf) rf.onclick = function () { AIWS.loadModels(); };
+      if (rf) rf.onclick = async function () { AIWS.loadModels(); };
       AIWS.loadEngines();          // 顺手把运行环境状态也拉一次 ✓
       try {
         const r = await AIWS.api('/api/models/status');
@@ -808,11 +838,12 @@
             btn = '<button class="mini primary" data-g="' + AIWS.esc(g.key) + '">⬇ 一键下载</button>';
             tag = '<span class="mdTag">' + g.have + '/' + g.count + '</span>';
           }
-          return '<div class="mdRow">' +
+          return '<div class="mdRow" data-mdg="' + AIWS.esc(g.key) + '">' +
             '<div class="mdHead"><b>' + g.icon + ' ' + AIWS.esc(g.name) + '</b>' + tag + btn + '</div>' +
             '<div class="mdNote">' + AIWS.esc(g.note || '') +
             (g.blocked ? '<br><span class="mdWhy">' + AIWS.esc(g.blocked) + '</span>' : '') + '</div>' +
             (items ? '<div class="mdItems">' + items + '</div>' : '') +
+            '<div class="mdJob"></div>' +          // ★ 点下载后，进度条 + 日志长在这里 ✓
             '</div>';
         }).join('');
         box.querySelectorAll('button[data-g]').forEach(function (b) {
@@ -830,7 +861,7 @@ async loadEngines() {
       const box = document.getElementById('egList');
       const st = document.getElementById('egStatus');
       const rf = document.getElementById('egRefresh');
-      if (rf) rf.onclick = function () { AIWS.loadEngines(); };
+      if (rf) rf.onclick = async function () { AIWS.loadEngines(); };
       try {
         const r = await AIWS.api('/api/engine/status');
         if (!r.ok) { if (st) { st.textContent = r.error || '读不到运行环境状态'; st.className = 'status err'; } return; }
@@ -855,7 +886,7 @@ async loadEngines() {
         });
         box.innerHTML = html;
         box.querySelectorAll('button[data-e]').forEach(function (b) {
-          b.onclick = function () { AIWS.startEngineInstall(b.dataset.e); };
+          b.onclick = async function () { AIWS.startEngineInstall(b.dataset.e); };
         });
         if (st) { st.textContent = r.ready ? '两个引擎都就绪了 ✓' : ''; st.className = 'status'; }
       } catch (e) {
@@ -906,27 +937,100 @@ async loadEngines() {
           return;
         }
         setTimeout(function () { AIWS.pollEngine(); }, 2500);
-      }).catch(function () { setTimeout(function () { AIWS.pollEngine(); }, 4000); });
+      }).catch(function () { setTimeout(async function () { AIWS.pollEngine(); }, 4000); });
     },
 
     async startModelInstall(group) {
       const st = document.getElementById('mdStatus');
-      const prog = document.getElementById('mdProg');
-      const logBox = document.getElementById('mdLog');
+      const row = document.querySelector('.mdRow[data-mdg="' + group + '"]');
+      if (row && row.dataset.busy === '1') return;          // 同一组别重复点 ✓
       try {
         const r = await AIWS.api('/api/models/install', { group: group });
-        if (!r.ok) { st.textContent = r.error || '启动失败'; st.className = 'status err'; return; }
-        AIWS.mdJob = r.job;
-        st.textContent = '已开始下载 —— 大模型要一会儿，别关窗口；' +
-          '下完会自动跟官方哈希逐字节比对，对不上就删掉不用 ✗';
-        st.className = 'status warn';
-        if (prog) prog.style.display = 'block';
-        if (logBox) logBox.textContent = '';
-        AIWS.pollModels();
+        if (!r.ok) {
+          if (st) { st.textContent = r.error || '启动失败'; st.className = 'status err'; }
+          return;
+        }
+        // ★★ 点完：**按钮消失** ✓ 本组下面**长出进度条 + 日志** ✓
+        //   各组用各自的 job / 各自的进度条 → **可以同时下多个** ✓ 互不干扰 ✓
+        if (row) {
+          row.dataset.busy = '1';
+          const btn = row.querySelector('button[data-g]');
+          if (btn) btn.remove();                             // 按钮消失 ✓
+          const slot = row.querySelector('.mdJob');
+          if (slot) {
+            slot.innerHTML =
+              '<div class="progress" style="margin-top:10px"><div class="bar">' +
+              '<span class="jbar" style="width:0%"></span></div>' +
+              '<div class="progText jtxt">已开始下载…</div></div>' +
+              '<div class="status warn jst">大模型要一会儿 —— ' +
+              '下完会自动跟官方哈希逐字节比对，对不上就删掉 ✗</div>' +
+              '<details style="margin-top:8px"><summary class="muted" style="cursor:pointer">' +
+              '下载日志</summary><pre class="logBox jlog">（刚开始）</pre></details>';
+          }
+          AIWS.mdJobs[r.job] = { group: group };
+          AIWS.pollMdJob(r.job, row);
+          if (st) {
+            st.textContent = '有 ' + Object.keys(AIWS.mdJobs).length + ' 组正在下载 —— 可以同时下别的组 ✓';
+            st.className = 'status warn';
+          }
+        }
       } catch (e) {
-        st.textContent = '启动失败：' + e.message;
-        st.className = 'status err';
+        if (st) { st.textContent = '启动失败：' + e.message; st.className = 'status err'; }
       }
+    },
+
+    // ★ 只更新**本组那一块** ✓（所以多组能同时下 ✓）
+    pollMdJob(jid, row) {
+      const tick = async function () {
+        if (!document.body.contains(row)) return;            // 列表被重画了 → 停 ✓
+        let j;
+        try {
+          j = await AIWS.api('/api/models/progress?job=' + encodeURIComponent(jid));
+        } catch (e) { setTimeout(tick, 2500); return; }
+        const bar = row.querySelector('.jbar');
+        const txt = row.querySelector('.jtxt');
+        const st = row.querySelector('.jst');
+        const lg = row.querySelector('.jlog');
+        if (bar) bar.style.width = (j.percent || 0) + '%';
+        if (txt) txt.textContent = (j.stage || '') + (j.detail ? '　·　' + j.detail : '') +
+          '　·　' + (j.percent || 0) + '%';
+        if (lg && j.log) lg.textContent = j.log.slice(-60).join('\n');
+        if (j.state === 'running') { setTimeout(tick, 1200); return; }
+        if (bar) bar.style.width = '100%';
+        if (st) {
+          st.textContent = (j.state === 'done')
+            ? '✓ 装好了（全部通过官方哈希校验）'
+            : '✗ 没成功：' + (j.error || '看下面日志');
+          st.className = 'status ' + (j.state === 'done' ? 'ok' : 'err');
+        }
+        delete AIWS.mdJobs[jid];
+        // ★★ 只在**成功**时刷新清单 ✓
+        //   失败时**坚决不刷** ✗ —— 一刷就把错误和日志冲没了，主人根本看不到为什么失败 ✗
+        //   （2026-10-03 踩过：虚拟机上下载失败后，进度条变回"一键下载"，日志全丢 ✗）
+        if (j.state === 'done') {
+          if (st) st.textContent += '　（正在刷新清单…）';
+          if (!Object.keys(AIWS.mdJobs).length) {
+            setTimeout(function () { AIWS.loadModels(); }, 1500);
+          }
+        } else if (st) {
+          // 失败：留一个「重试」按钮 ✓ 点它重新下 —— **会接着下** ✓ 已下的不白费 ✓
+          var again = document.createElement('button');
+          again.className = 'mini';
+          again.style.marginLeft = '10px';
+          again.textContent = '↻ 重试（接着下 ✓ 已下的不白费）';
+          again.onclick = function () {
+            st.textContent = '重新开始…';
+            AIWS.startModelInstall(row.dataset.mdg || row.getAttribute('data-mdg'));
+          };
+          st.appendChild(again);
+          var tip = document.createElement('div');
+          tip.className = 'uiHint';
+          tip.style.marginTop = '6px';
+          tip.textContent = '① 日志就在上面，展开看看卡在哪 ✓　② 直接点重试也能接着下 ✓';
+          st.parentNode.insertBefore(tip, st.nextSibling);
+        }
+      };
+      tick();
     },
 
     pollModels() {
@@ -963,7 +1067,8 @@ async loadEngines() {
       tick();
     },
 
-    /* 每个需要模型的标签页：切过去时检查一下，缺就顶上冒一条（带一键下载），装齐就自动撤掉 */
+    /* 每个需要模型的标签页：切过去时检查一下，缺就顶上冒一条**提示** ✓
+       （★ 2026-10-03 起：这里**不带下载按钮** ✗，只提示 + 跳到「设置」页 ✓） */
     /* 每个标签页是「本地跑」还是「调 API」——这张表说了算 ✓ */
     TAB_KIND: {
       dsh: ['API', '走 DeepSeek 云端，按字数计费'],
@@ -1028,16 +1133,18 @@ async loadEngines() {
           return;
         }
         bar.className = 'mdBar';
+        // ★ 2026-10-03 主人要求：**所有模型下载统一收进「设置」页** ✓
+        //   每个标签页顶部只留**提示 + 跳转**，不再就地下载 ✓（避免多点开花、也避开原生窗口的问题 ✓）
         bar.innerHTML = '<span class="mdBarIcon">📦</span>' +
           '<span class="mdBarTxt"><b>' + g.icon + ' ' + AIWS.esc(g.name) + '</b> 还差 ' +
           (g.count - g.have) + ' 个模型（共 ' + g.count + ' 个）' +
-          (g.note ? '　' + AIWS.esc(g.note) : '') + '</span>' +
-          '<button class="mini primary">⬇ 一键下载</button>';
+          (g.note ? '　' + AIWS.esc(g.note) : '') +
+          '　→ <b>下载请到「⚙️ 设置」页</b></span>' +
+          '<button class="mini">去设置页下载 →</button>';
         const btn = bar.querySelector('button');
-        if (btn) btn.onclick = function () {
-          btn.disabled = true;
-          btn.textContent = '下载中…（进度看「⚙️ 设置」页）';
-          AIWS.startModelInstall(g.key);
+        if (btn) btn.onclick = async function () {
+          const sb = document.querySelector('[data-tab="settings"]');
+          if (sb) sb.click();                     // 只跳转，不下载 ✓
         };
       } catch (e) { /* 提示条而已，出错就静默，别打扰用的人 */ }
     },
@@ -1078,7 +1185,7 @@ async loadEngines() {
         alert('DeepSeek API Key 已保存（本机 data/config.json）\n「🔍 AI 搜索引擎」现在就能用了 ✓');
       });
       document.getElementById('dsKeyClear').addEventListener('click', async function () {
-        if (!confirm('确定清掉已保存的 DeepSeek API Key？')) return;
+        if (await AIWS.no('确定清掉已保存的 DeepSeek API Key？')) return;
         await AIWS.saveConfig({ clearDsKey: true });
         alert('已清除');
       });
@@ -1095,7 +1202,7 @@ async loadEngines() {
         alert('已重置。下次切到各标签页时会重新弹说明。');
       });
       document.getElementById('quitBtn').addEventListener('click', async function () {
-        if (!confirm('确定关闭后台服务吗？关掉后这个页面就不能用了。')) return;
+        if (await AIWS.no('确定关闭后台服务吗？关掉后这个页面就不能用了。')) return;
         await AIWS.api('/api/quit', {});
         document.body.innerHTML = '<div style="padding:80px;text-align:center;font-size:20px;font-weight:700;color:#11406e">' +
           '服务已关闭。重新双击「启动AI工作站」即可再打开。</div>';
@@ -1108,7 +1215,7 @@ async loadEngines() {
       if (!b || b.__bound) return;
       b.__bound = true;
       b.onclick = async function () {
-        if (!confirm('确定关掉所有后端吗？\n\n' +
+        if (await AIWS.no('确定关掉所有后端吗？\n\n' +
           '会停掉：\n· ComfyUI（本地千问 / 抠图 / 溶图 的引擎）\n· AI 音乐工坊\n· 小鲸鱼生图\n· PSD2Live\n\n' +
           '工作站本身和 DSH 不受影响，要用时按需再启动即可。')) return;
         b.disabled = true;
@@ -1124,7 +1231,7 @@ async loadEngines() {
           alert('已关掉所有后端 ✓\n\n' + mf + vf + '\n\n' + lines.join('\n'));
           b.classList.add('done');
           b.textContent = '✓ 后端已关';
-          setTimeout(function () {
+          setTimeout(async function () {
             b.classList.remove('done'); b.textContent = '⏻ 关掉所有后端'; b.disabled = false;
           }, 6000);
           AIWS.health();
@@ -1136,8 +1243,59 @@ async loadEngines() {
       };
     },
 
+    /* ---------------------------------------------------------------
+       ★ 功能注册表（服务端 features.py = 唯一事实来源）
+          · 补 TABS / TAB_KIND —— 新标签不会因为没兜底而被弹回首页 ✓
+          · 导航里缺按钮 → 自动补一个（免得忘了改 index.html）
+          · 有按钮却没登记 → 控制台报警（这种最坑：点进去被弹回首页 ✗）
+       --------------------------------------------------------------- */
+    async applyFeatureRegistry() {
+      try {
+        const r = await AIWS.api('/api/features');
+        if (!r || !r.ok || !r.nav || !r.nav.length) return;
+        AIWS.features = r;
+        const known = {};
+        r.nav.forEach(function (f) {
+          known[f.id] = true;
+          if (!TABS[f.id]) {
+            TABS[f.id] = {
+              icon: f.icon, title: f.name,
+              tipsTitle: f.name + ' · 使用说明',
+              tipsBody: '<p>' + AIWS.esc(f.kindNote || '') + '</p>'
+            };
+            console.warn('[features] TABS 缺 ' + f.id + ' → 已按注册表兜底');
+          }
+          AIWS.TAB_KIND[f.id] = [f.kind, f.kindNote || ''];
+        });
+        const bar = document.getElementById('tabs');
+        if (bar) {
+          const rows = bar.querySelectorAll('.tabRow');
+          const row = rows.length ? rows[rows.length - 1] : bar;
+          const before = bar.querySelector('[data-tab="settings"]');
+          r.nav.forEach(function (f) {
+            if (bar.querySelector('[data-tab="' + f.id + '"]')) return;
+            const b = document.createElement('button');
+            b.className = 'tab';
+            b.setAttribute('data-tab', f.id);
+            b.innerHTML = '<i>' + f.icon + '</i><span>' + AIWS.esc(f.name) + '</span>';
+            row.insertBefore(b, (before && before.parentNode === row) ? before : null);
+            console.warn('[features] 导航缺 ' + f.id + ' → 已自动补上（顺手补 index.html 更整齐）');
+          });
+          Array.prototype.forEach.call(bar.querySelectorAll('[data-tab]'), async function (b) {
+            const id = b.getAttribute('data-tab');
+            if (!known[id]) {
+              console.warn('[features] 按钮 ' + id + ' 没在 features.py 里登记 ✗ 点它会跳回首页');
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('[features] 读注册表失败（用内置兜底继续）：', e && e.message);
+      }
+    },
+
     // ---------------- 启动 ----------------
     async boot() {
+      await AIWS.applyFeatureRegistry();   // ★ 先拉注册表，再把标签补齐
       AIWS.initTips();
       AIWS.initTabs();
       AIWS.showWelcome();     // ★ 打开网页就弹（盖在各标签说明之上）

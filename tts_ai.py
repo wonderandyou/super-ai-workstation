@@ -26,13 +26,14 @@ import uuid
 #  常量
 # --------------------------------------------------------------------------
 ROOT = os.path.dirname(os.path.abspath(__file__))
-F5_DIR = r"D:\F5TTS"
+import paths as _paths          # ★ 统一路径层
+F5_DIR = _paths.f5tts()
 F5_PY = os.path.join(F5_DIR, "venv", "Scripts", "python.exe")
 F5_SRC = os.path.join(F5_DIR, "f5-tts", "src")
 F5_CKPT = os.path.join(F5_DIR, "checkpoints")
 WORKER = os.path.join(ROOT, "_tts_worker.py")
 
-REF_DIR = r"D:\ComfyUI\ComfyUI\input\声音包"       # 和音乐工坊共用同一个声音包目录
+REF_DIR = _paths.ref_voice_dir()                   # 和音乐工坊共用同一个声音包目录
 REF_EXT = (".wav", ".flac", ".mp3", ".ogg", ".m4a", ".opus", ".aac")
 
 DATA = os.path.join(ROOT, "data")

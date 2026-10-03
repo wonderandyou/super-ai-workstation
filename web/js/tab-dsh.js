@@ -105,7 +105,7 @@
     const box = $('dshKeyStatus');
     if (!v) { box.textContent = '先粘贴 API Key'; box.className = 'status err'; return null; }
     if (v.indexOf('sk-') !== 0) {
-      if (!confirm('这串不是 sk- 开头，确定要保存吗？')) return null;
+      if (await AIWS.no('这串不是 sk- 开头，确定要保存吗？')) return null;
     }
     try {
       const r = await window.AIWS.api('/api/dsh/apikey', { apikey: v });
@@ -130,7 +130,7 @@
   //  ② 一键安装
   // ------------------------------------------------------------------
   async function doInstall() {
-    if (!confirm('将运行捆绑的 DSH 安装程序：\n\n· 自动装 Node.js（便携版，不需要管理员）\n· 安装 DSH 本体\n· 创建桌面「DSH Web」快捷方式\n\n可能要几分钟，确定开始吗？')) return;
+    if (await AIWS.no('将运行捆绑的 DSH 安装程序：\n\n· 自动装 Node.js（便携版，不需要管理员）\n· 安装 DSH 本体\n· 创建桌面「DSH Web」快捷方式\n\n可能要几分钟，确定开始吗？')) return;
     const key = $('dshKeyInput').value.trim();
     $('dshInstallBtn').disabled = true;
     $('dshInstallProg').style.display = 'block';
@@ -218,7 +218,7 @@
   async function startDsh() {
     $('dshStartBtn').disabled = true;
     if (st && !st.apiKeySet) {
-      if (!confirm('还没填 API Key，DSH 起来后也用不了模型。\n仍要启动吗？')) {
+      if (await AIWS.no('还没填 API Key，DSH 起来后也用不了模型。\n仍要启动吗？')) {
         $('dshStartBtn').disabled = false;
         return;
       }
@@ -267,7 +267,7 @@
   }
 
   async function stopDsh() {
-    if (!confirm('确定停止 DSH 服务吗？')) return;
+    if (await AIWS.no('确定停止 DSH 服务吗？')) return;
     finishBoot(false);
     await window.AIWS.api('/api/dsh/stop', {});
     setTimeout(function () { refresh(true); }, 1500);

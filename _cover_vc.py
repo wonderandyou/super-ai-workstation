@@ -28,7 +28,9 @@ import subprocess
 import sys
 import time
 
-SEEDVC_DIR = r"D:\SeedVC"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # 保证能 import paths
+import paths as _paths          # ★ 统一路径层
+SEEDVC_DIR = _paths.seedvc()
 SEEDVC_SRC = os.path.join(SEEDVC_DIR, "seed-vc")
 INFERENCE = os.path.join(SEEDVC_SRC, "inference.py")
 

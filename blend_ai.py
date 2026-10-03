@@ -63,7 +63,8 @@ JOB_LOCK = threading.Lock()
 #  方案 B 用到的 ComfyUI 连接与模型（和 _test_blend_b.py 里验证过的一致）
 # --------------------------------------------------------------------------
 COMFY = "http://127.0.0.1:8188"
-COMFY_ROOT = r"D:\ComfyUI\ComfyUI"
+import paths as _paths          # ★ 统一路径层（安装版→安装目录；开发机→老位置）
+COMFY_ROOT = _paths.comfy_dir()
 COMFY_IN = os.path.join(COMFY_ROOT, "input")
 COMFY_OUT = os.path.join(COMFY_ROOT, "output")
 

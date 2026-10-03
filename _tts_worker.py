@@ -55,7 +55,9 @@ import os
 import sys
 import time
 
-F5_DIR = r"D:\F5TTS"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # 保证能 import paths
+import paths as _paths          # ★ 统一路径层
+F5_DIR = _paths.f5tts()
 F5_SRC = os.path.join(F5_DIR, "f5-tts", "src")
 sys.path.insert(0, F5_DIR)
 sys.path.insert(0, F5_SRC)

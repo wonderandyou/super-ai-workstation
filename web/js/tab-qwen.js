@@ -1,6 +1,6 @@
 /* ============================================================
    标签页：本地千问生图（ComfyUI + Qwen-Image-2.1）
-   右上角按钮启动后端 · 一键下载安装 · 完全离线
+   右上角按钮启动后端 · 模型下载去「设置」页 · 完全离线
    ============================================================ */
 (function () {
   'use strict';
@@ -106,7 +106,9 @@
       '<span class="ic">Σ</span><span class="nm"><b>还需要下载</b></span>' +
       '<span class="sz"><b>' + (missing ? human(missing) : '0 B（全部就绪）') + '</b></span></div>');
     box.innerHTML = items.join('');
-    $('qInstallBtn').textContent = missing ? '⬇ 一键下载并安装（' + human(missing) + '）' : '↻ 重新检查 / 修复';
+    $('qInstallBtn').textContent = missing
+      ? '⬇ 去「⚙️ 设置」页下载模型（还差 ' + human(missing) + '）'
+      : '打开「⚙️ 设置」页（模型已装齐 ✓，可检查 / 修复）';
   }
 
   // ------------------------------------------------------------------
@@ -137,7 +139,7 @@
   }
 
   async function stopBackend() {
-    if (!confirm('确定停止后端吗？停止后本地出图不能用。')) return;
+    if (await AIWS.no('确定停止后端吗？停止后本地出图不能用。')) return;
     await window.AIWS.api('/api/local/stop', {});
     setTimeout(function () { refreshStatus(); }, 1500);
   }
@@ -153,8 +155,15 @@
     };
   }
 
+  // ★ 2026-10-03 主人要求：模型下载统一收进「设置」页 ✓
+  //   这里（以及所有标签页顶部）只做**提示 + 跳转**，不再就地下载 ✓
+  function gotoSettings() {
+    const sb = document.querySelector('[data-tab="settings"]');
+    if (sb) sb.click();
+  }
+
   async function doInstall() {
-    if (!confirm('将开始下载并安装：\n\n· ComfyUI 运行环境（约 1.86 GB）\n· Qwen-Image-2.1 三个模型（约 13.27 GB）\n\n总计约 15 GB，支持断点续传。中途可以关掉页面，下次继续。\n\n确定开始吗？')) return;
+    if (await AIWS.no('将开始下载并安装：\n\n· ComfyUI 运行环境（约 1.86 GB）\n· Qwen-Image-2.1 三个模型（约 13.27 GB）\n\n总计约 15 GB，支持断点续传。中途可以关掉页面，下次继续。\n\n确定开始吗？')) return;
     $('qInstallBtn').disabled = true;
     $('qInstallProg').style.display = 'block';
     $('qInstallStatus').textContent = '';
@@ -304,7 +313,7 @@
 
     $('qStartBtn').addEventListener('click', startBackend);
     $('qStopBtn').addEventListener('click', stopBackend);
-    $('qInstallBtn').addEventListener('click', doInstall);
+    $('qInstallBtn').addEventListener('click', gotoSettings);
     $('qGenBtn').addEventListener('click', onGenerate);
     $('qAspect').addEventListener('change', updateSizeHint);
     $('qMp').addEventListener('change', updateSizeHint);

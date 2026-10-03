@@ -24,8 +24,15 @@ import re
 import subprocess
 import sys
 
-FF = (r"D:\ComfyUI\python_embeded\Lib\site-packages\imageio_ffmpeg\binaries"
-      r"\ffmpeg-win-x86_64-v7.1.exe")
+import paths as _paths          # ★ 统一路径层
+_BIN = os.path.join(_paths.comfy(), "python_embeded", "Lib", "site-packages",
+                    "imageio_ffmpeg", "binaries")
+FF = os.path.join(_BIN, "ffmpeg-win-x86_64-v7.1.exe")
+if not os.path.isfile(FF):                      # 版本号变了也能找着 ✓
+    import glob as _glob
+    _hit = sorted(_glob.glob(os.path.join(_BIN, "ffmpeg*.exe")))
+    if _hit:
+        FF = _hit[0]
 FPROBE_HINT = os.path.join(os.path.dirname(FF), "ffprobe.exe")
 
 # 水印相对右下角的比例（带余量，实测值 ×1.3 左右）

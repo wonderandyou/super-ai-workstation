@@ -31,9 +31,10 @@ import uuid
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 
-COMFY_PY = r"D:\ComfyUI\python_embeded\python.exe"
+import paths as _paths          # ★ 统一路径层
+COMFY_PY = _paths.comfy_py()
 WORKER = os.path.join(ROOT, "_stem_worker.py")
-MODEL_CACHE = os.path.expanduser(r"~\.cache\torch\hub\checkpoints")
+MODEL_CACHE = _paths.torch_hub()
 
 SRC_DIR = os.path.join(DATA, "分离素材")
 OUT_DIR = os.path.join(DATA, "分离出片")

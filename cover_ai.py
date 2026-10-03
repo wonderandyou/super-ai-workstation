@@ -28,9 +28,10 @@ import uuid
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-COMFY_PY = r"D:\ComfyUI\python_embeded\python.exe"
-SEEDVC_PY = r"D:\SeedVC\venv\Scripts\python.exe"
-SEEDVC_DIR = r"D:\SeedVC"
+import paths as _paths          # ★ 统一路径层
+COMFY_PY = _paths.comfy_py()
+SEEDVC_PY = _paths.seedvc_py()
+SEEDVC_DIR = _paths.seedvc()
 SEEDVC_SRC = os.path.join(SEEDVC_DIR, "seed-vc")
 
 SEP_WORKER = os.path.join(ROOT, "_cover_sep.py")     # ComfyUI 环境：分离 / 混音
@@ -39,7 +40,7 @@ POLISH_WORKER = os.path.join(ROOT, "_cover_polish.py")  # ComfyUI 环境：去�
 SLIMREF_WORKER = os.path.join(ROOT, "_cover_slimref.py")  # ComfyUI 环境：裁短声音包
 MAX_REF_SEC = 8.0            # 声音包最长用 8 秒（Seed-VC 推荐 3~10 秒）
 
-REF_DIR = r"D:\ComfyUI\ComfyUI\input\声音包"          # 和朗读、音乐工坊共用
+REF_DIR = _paths.ref_voice_dir()                      # 和朗读、音乐工坊共用
 REF_EXT = (".wav", ".flac", ".mp3", ".ogg", ".m4a", ".opus", ".aac")
 
 DATA = os.path.join(ROOT, "data")
